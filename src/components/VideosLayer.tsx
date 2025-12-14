@@ -10,6 +10,7 @@ import {
 import { oppositeCornerAnchorWorld, centerFromTopLeft } from './helpers/transformMath';
 import { useGlobalDrag } from '../hooks/useGlobalDrag';
 import { useGlobalTransform, type TransformState } from '../hooks/useGlobalTransform';
+import { FiPlay, FiPause } from 'react-icons/fi';
 
 interface Props {
   container: Container | null;
@@ -20,6 +21,7 @@ export function VideosLayer({ container }: Props) {
   const unsubscribeRef = useRef<null | (() => void)>(null);
   const objects = useCanvasStore((s) => s.objects);
   const videos = useMemo(() => objects.filter((o: any) => o.type === 'video') as any[], [objects]);
+  const selectedId = useCanvasStore((s) => s.selectedId);
   const playVideo = useCanvasStore((s) => s.playVideo);
   const pauseVideo = useCanvasStore((s) => s.pauseVideo);
   const viewport = useCanvasStore((s) => s.viewport);
@@ -263,35 +265,44 @@ export function VideosLayer({ container }: Props) {
   // shared scale/rotate wiring
   useGlobalTransform(transformRef);
 
-  return (
-    <>
-      {videos.map((v) => (
-        <div
-          key={v.id}
-          className="wb-video-float"
-          style={{ left: v.x + viewport.x, top: v.y + v.height + 6 + viewport.y }}
+  // Show per-video controls only for the selected video (if any)
+  const selectedVideo = useMemo(() => videos.find((v) => v.id === selectedId) || null, [videos, selectedId]);
+
+  return selectedVideo ? (
+    <div
+      key={selectedVideo.id}
+      className="wb-video-float"
+      style={{
+        left: selectedVideo.x + viewport.x,
+        top: selectedVideo.y + selectedVideo.height + 6 + viewport.y,
+        width: selectedVideo.width,
+      }}
+    >
+      <div className="wb-video-item">
+        <span className="wb-video-label">Video</span>
+        <button
+          className="btn btn-icon"
+          onClick={() => playVideo(selectedVideo.id)}
+          disabled={!!selectedVideo.playing}
+          aria-label="Play video"
+          title="Play video"
         >
-          <div className="wb-video-item">
-            <span className="wb-video-label">Video</span>
-            <button
-              className="btn"
-              onClick={() => playVideo(v.id)}
-              disabled={!!v.playing}
-            >
-              Play
-            </button>
-            <button
-              className="btn"
-              onClick={() => pauseVideo(v.id)}
-              disabled={!v.playing}
-            >
-              Pause
-            </button>
-          </div>
-        </div>
-      ))}
-    </>
-  );
+          <FiPlay className="icon" />
+          <span className="icon-text">Play</span>
+        </button>
+        <button
+          className="btn btn-icon"
+          onClick={() => pauseVideo(selectedVideo.id)}
+          disabled={!selectedVideo.playing}
+          aria-label="Pause video"
+          title="Pause video"
+        >
+          <FiPause className="icon" />
+          <span className="icon-text">Pause</span>
+        </button>
+      </div>
+    </div>
+  ) : null;
 }
 
 export default VideosLayer;
