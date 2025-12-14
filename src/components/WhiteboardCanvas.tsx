@@ -129,17 +129,7 @@ export function WhiteboardCanvas() {
           }
         });
 
-        const st = canvasStore.getState();
-        if (st.objects.length === 0) {
-          st.addObject({
-            type: 'rect',
-            x: 120,
-            y: 120,
-            width: 240,
-            height: 140,
-            fill: 0x2ecc71,
-          } as any);
-        }
+        // removed auto-seeding of a demo rectangle
       } catch(error) {
         console.error("failed", error);
       }
@@ -272,16 +262,6 @@ export function WhiteboardCanvas() {
       <VideosLayer container={videosContainer} />
       {/* Toolbar controls */}
       <Toolbar
-        onAddRect={() => {
-          canvasStore.getState().addObject({
-            type: 'rect',
-            x: Math.random() * 250,
-            y: Math.random() * 250,
-            width: 240,
-            height: 140,
-            fill: 0x2ecc71,
-          } as any);
-        }}
         onPlayAll={() => canvasStore.getState().playAllVideos()}
         onPauseAll={() => canvasStore.getState().pauseAllVideos()}
         onAddImage={() => setImgUrlOpen(true)}
