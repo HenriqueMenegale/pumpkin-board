@@ -259,6 +259,44 @@
   border: 1px solid #e5e7eb;
   color: #111827;
 }
+
+/* ===== Debug panel ===== */
+.wb-debug-panel {
+  position: absolute;
+  top: 12px;
+  right: 300px; /* leave space from sidebar */
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 13; /* above sidebar and props */
+  min-width: 360px;
+}
+.wb-debug-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.wb-debug-title {
+  font-weight: 700;
+}
+.wb-debug-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+}
+.wb-debug-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+}
+.wb-debug-note {
+  padding: 0 12px 12px 12px;
+  text-align: left;
+}
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;

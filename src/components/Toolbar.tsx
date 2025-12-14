@@ -4,6 +4,7 @@ type ToolbarProps = {
   onAddImage: () => void;
   onAddVideo: () => void;
   onAddElement?: () => void;
+  onToggleDebug?: () => void;
 };
 
 export function Toolbar({
@@ -11,7 +12,7 @@ export function Toolbar({
   onPauseAll,
   onAddImage,
   onAddVideo,
-  onAddElement,
+  onToggleDebug,
 }: ToolbarProps) {
   return (
     <div className="wb-controls">
@@ -19,8 +20,8 @@ export function Toolbar({
       <button onClick={onPauseAll} className="btn">Pause all videos</button>
       <button onClick={onAddImage} className="btn btn-blue">Add image via URL</button>
       <button onClick={onAddVideo} className="btn btn-blue">Add video via URL</button>
-      {onAddElement && (
-        <button onClick={onAddElement} className="btn btn-blue">Add Element</button>
+      {onToggleDebug && (
+        <button onClick={onToggleDebug} className="btn">Debug</button>
       )}
     </div>
   );

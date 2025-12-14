@@ -7,7 +7,7 @@ interface Props {
 }
 
 export function VideosLayer({ container }: Props) {
-  const spritesRef = useRef<Map<string, { sprite: Sprite; video: HTMLVideoElement; outline?: Graphics }>>(new Map());
+  const spritesRef = useRef<Map<string, { sprite: Sprite; video?: HTMLVideoElement; outline?: Graphics }>>(new Map());
   const unsubscribeRef = useRef<null | (() => void)>(null);
   const objects = useCanvasStore((s) => s.objects);
   const videos = useMemo(() => objects.filter((o: any) => o.type === 'video') as any[], [objects]);
@@ -15,25 +15,24 @@ export function VideosLayer({ container }: Props) {
   const pauseVideo = useCanvasStore((s) => s.pauseVideo);
   const viewport = useCanvasStore((s) => s.viewport);
   const dragRef = useRef<null | { id: string; dx: number; dy: number }>(null);
+  // prevent duplicate sprite creations while waiting for canplay
+  const pendingRef = useRef<Map<string, Promise<void>>>(new Map());
 
   useEffect(() => {
     if (!container) return;
 
+    // ensure predictable draw order if any zIndex is used later
+    (container as any).sortableChildren = true;
+
     const entries = spritesRef.current;
     let alive = true;
 
-    const createVideoSprite = async (
+    const loadAndSwapVideoTexture = async (
       id: string,
       src: string,
       opts: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-        rotation?: number;
-        muted?: boolean;
         loop?: boolean;
-        autoplay?: boolean; // @todo need to recheck docs
+        muted?: boolean;
         playing?: boolean;
         volume?: number;
         currentTime?: number;
@@ -53,16 +52,9 @@ export function VideosLayer({ container }: Props) {
         try { video.currentTime = Math.max(0, opts.currentTime); } catch {}
       }
       try {
-        // Wait for the video to be able to play before creating texture
         await new Promise<void>((resolve, reject) => {
-          const onCanPlay = () => {
-            cleanup();
-            resolve();
-          };
-          const onError = () => {
-            cleanup();
-            reject(new Error(`Failed to load video: ${src}`));
-          };
+          const onCanPlay = () => { cleanup(); resolve(); };
+          const onError = () => { cleanup(); reject(new Error(`Failed to load video: ${src}`)); };
           const cleanup = () => {
             video.removeEventListener('canplay', onCanPlay);
             video.removeEventListener('error', onError);
@@ -78,46 +70,18 @@ export function VideosLayer({ container }: Props) {
 
       if (!alive || !container || (container as any).destroyed) return;
 
+      const entry = entries.get(id);
+      if (!entry) return; // entry might have been removed
+
+      // Swap the placeholder texture to the real video texture
       const texture = Texture.from(video);
-      const sprite = new Sprite(texture);
-      sprite.x = opts.x;
-      sprite.y = opts.y;
-      sprite.rotation = opts.rotation ?? 0;
-      sprite.width = opts.width;
-      sprite.height = opts.height;
+      entry.sprite.texture = texture;
+      (entry.sprite as any).tint = 0xFFFFFF; // clear placeholder tint
+      entry.video = video;
 
-      // interactivity for selection/dragging
-      (sprite as any).eventMode = 'static';
-      (sprite as any).cursor = 'pointer';
-      sprite.on('pointerdown', (e: any) => {
-        const st = useCanvasStore.getState();
-        if (st.panningMode) return; // disable item drag while panning
-        const pos = e.global;
-        const local = { x: pos.x - st.viewport.x, y: pos.y - st.viewport.y };
-        st.selectObject(id);
-        // use the sprite's live position to compute drag offset
-        dragRef.current = { id, dx: local.x - sprite.x, dy: local.y - sprite.y };
-        (sprite as any).cursor = 'grabbing';
-      });
-      sprite.on('pointerup', () => {
-        dragRef.current = null;
-        (sprite as any).cursor = 'pointer';
-      });
-      sprite.on('pointerupoutside', () => {
-        dragRef.current = null;
-        (sprite as any).cursor = 'pointer';
-      });
-
-      container.addChild(sprite);
-      entries.set(id, { sprite, video });
-
-      // control inicial playing state
-      if (opts.playing) {
-        try {
-          await video.play();
-        } catch (error) {
-            console.error(error);
-        }
+      // Apply desired playing state
+      if (useCanvasStore.getState().objects.find((o) => o.id === id && (o as any).playing)) {
+        try { await video.play(); } catch {}
       }
     };
 
@@ -143,10 +107,62 @@ export function VideosLayer({ container }: Props) {
       for (const obj of videos as any[]) {
         const existing = entries.get(obj.id);
         if (!existing) {
-          try {
-            await createVideoSprite(obj.id, obj.src, obj);
-          } catch (e) {
-            console.error('Failed to load video', obj.src, e);
+          // Create a visible placeholder sprite immediately
+          const s = new Sprite(Texture.WHITE);
+          // Use latest values to avoid snapping after drags during async load
+          const latest = useCanvasStore.getState().objects.find((o) => o.id === obj.id) as any;
+          const lx = latest?.x ?? obj.x;
+          const ly = latest?.y ?? obj.y;
+          const lw = latest?.width ?? obj.width;
+          const lh = latest?.height ?? obj.height;
+          const lr = latest?.rotation ?? obj.rotation ?? 0;
+
+          s.x = lx;
+          s.y = ly;
+          s.rotation = lr;
+          s.width = lw;
+          s.height = lh;
+          s.alpha = 1;
+          s.visible = true;
+          (s as any).renderable = true;
+          (s as any).tint = 0xdddddd; // light placeholder tint
+
+          // Interactivity for selection/dragging
+          (s as any).eventMode = 'static';
+          (s as any).cursor = 'pointer';
+          s.on('pointerdown', (e: any) => {
+            const st = useCanvasStore.getState();
+            if (st.panningMode) return;
+            const pos = e.global;
+            const local = { x: pos.x - st.viewport.x, y: pos.y - st.viewport.y };
+            st.selectObject(obj.id);
+            dragRef.current = { id: obj.id, dx: local.x - s.x, dy: local.y - s.y };
+            (s as any).cursor = 'grabbing';
+          });
+          s.on('pointerup', () => {
+            dragRef.current = null;
+            (s as any).cursor = 'pointer';
+          });
+          s.on('pointerupoutside', () => {
+            dragRef.current = null;
+            (s as any).cursor = 'pointer';
+          });
+
+          container.addChild(s);
+          entries.set(obj.id, { sprite: s });
+
+          // Coalesce async load-and-swap per id
+          if (!pendingRef.current.has(obj.id)) {
+            const p = (async () => {
+              try {
+                await loadAndSwapVideoTexture(obj.id, obj.src, obj);
+              } catch (e) {
+                console.error('Failed to load video', obj.src, e);
+              } finally {
+                pendingRef.current.delete(obj.id);
+              }
+            })();
+            pendingRef.current.set(obj.id, p);
           }
         } else {
           const { sprite, video } = existing;
@@ -155,46 +171,52 @@ export function VideosLayer({ container }: Props) {
           sprite.rotation = obj.rotation ?? 0;
           sprite.width = obj.width;
           sprite.height = obj.height;
+          sprite.alpha = 1;
+          sprite.visible = true;
 
-          if (typeof obj.loop === 'boolean') video.loop = obj.loop;
-          if (typeof obj.muted === 'boolean') video.muted = obj.muted;
-          if (typeof obj.volume === 'number') {
-            try { video.volume = Math.min(1, Math.max(0, obj.volume)); } catch {}
-          }
-          if (typeof obj.currentTime === 'number' && Math.abs(video.currentTime - obj.currentTime) > 0.25) {
-            try { video.currentTime = Math.max(0, obj.currentTime); } catch {}
-          }
-          if (typeof obj.playing === 'boolean') {
-            const wantsPlay = !!obj.playing;
-            if (wantsPlay && video.paused) {
-              try { await video.play(); } catch {}
-            } else if (!wantsPlay && !video.paused) {
-              try { video.pause(); } catch {}
+          if (video) {
+            if (typeof obj.loop === 'boolean') video.loop = obj.loop;
+            if (typeof obj.muted === 'boolean') video.muted = obj.muted;
+            if (typeof obj.volume === 'number') {
+              try { video.volume = Math.min(1, Math.max(0, obj.volume)); } catch {}
+            }
+            if (typeof obj.currentTime === 'number' && Math.abs(video.currentTime - obj.currentTime) > 0.25) {
+              try { video.currentTime = Math.max(0, obj.currentTime); } catch {}
+            }
+            if (typeof obj.playing === 'boolean') {
+              const wantsPlay = !!obj.playing;
+              if (wantsPlay && video.paused) {
+                try { await video.play(); } catch {}
+              } else if (!wantsPlay && !video.paused) {
+                try { video.pause(); } catch {}
+              }
             }
           }
         }
 
         // selection outline per video
-        const entry = entries.get((obj as any).id)!;
-        const show = selectedId === (obj as any).id;
-        if (show) {
-          let outline = entry.outline;
-          if (!outline) {
-            outline = new Graphics();
-            container.addChild(outline);
-            entry.outline = outline;
+        const entry = entries.get((obj as any).id);
+        if (entry) {
+          const show = selectedId === (obj as any).id;
+          if (show) {
+            let outline = entry.outline;
+            if (!outline) {
+              outline = new Graphics();
+              container.addChild(outline);
+              entry.outline = outline;
+            }
+            outline.clear();
+            // Mirror the sprite transform so the outline rotates with the video
+            outline.position.set((obj as any).x, (obj as any).y);
+            outline.rotation = (obj as any).rotation ?? 0;
+            outline
+              .rect(-2, -2, (obj as any).width + 4, (obj as any).height + 4)
+              .stroke({ color: 0x3b82f6, width: 2 });
+          } else if (entry.outline) {
+            if (entry.outline.parent === container) container.removeChild(entry.outline);
+            entry.outline.destroy();
+            delete entry.outline;
           }
-          outline.clear();
-          // Mirror the sprite transform so the outline rotates with the video
-          outline.position.set((obj as any).x, (obj as any).y);
-          outline.rotation = (obj as any).rotation ?? 0;
-          outline
-            .rect(-2, -2, (obj as any).width + 4, (obj as any).height + 4)
-            .stroke({ color: 0x3b82f6, width: 2 });
-        } else if (entry.outline) {
-          if (entry.outline.parent === container) container.removeChild(entry.outline);
-          entry.outline.destroy();
-          delete entry.outline;
         }
       }
     };
@@ -216,10 +238,11 @@ export function VideosLayer({ container }: Props) {
         if (entry.outline && entry.outline.parent === container) container.removeChild(entry.outline);
         entry.outline?.destroy();
         if (entry.sprite.parent === container) container.removeChild(entry.sprite);
-        try { entry.video.pause(); } catch {}
+        if (entry.video) { try { entry.video.pause(); } catch {} }
         entry.sprite.destroy({ children: true, texture: true, baseTexture: true });
       }
       entries.clear();
+      pendingRef.current.clear();
     };
   }, [container]);
 

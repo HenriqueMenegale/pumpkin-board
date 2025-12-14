@@ -6,6 +6,7 @@ import { Toolbar } from './Toolbar';
 import { ImagesLayer } from './ImagesLayer';
 import { VideosLayer } from './VideosLayer';
 import { LayersSidebar } from './LayersSidebar';
+import { DebugPanel } from './DebugPanel';
 import { PropertiesPanel } from './PropertiesPanel';
 
 export function WhiteboardCanvas() {
@@ -13,6 +14,7 @@ export function WhiteboardCanvas() {
   const [urlOpen, setUrlOpen] = useState(false);
   const [imgUrlOpen, setImgUrlOpen] = useState(false);
   const [vidUrlOpen, setVidUrlOpen] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
   const [imagesContainer, setImagesContainer] = useState<Container | null>(null);
   const [videosContainer, setVideosContainer] = useState<Container | null>(null);
   const dragRef = useRef<null | { id: string; dx: number; dy: number }>(null);
@@ -250,7 +252,7 @@ export function WhiteboardCanvas() {
         if (panningMode) {
           const t = e.target as HTMLElement;
           // Ignore clicks on UI overlays/controls
-          if (t && (t.closest('.wb-controls') || t.closest('.wb-video-float') || t.closest('.modal') || t.closest('.modal-backdrop') || t.closest('.wb-sidebar') || t.closest('.wb-props'))) {
+          if (t && (t.closest('.wb-controls') || t.closest('.wb-video-float') || t.closest('.modal') || t.closest('.modal-backdrop') || t.closest('.wb-sidebar') || t.closest('.wb-props') || t.closest('.wb-debug-panel'))) {
             return;
           }
           setPanningActive(true);
@@ -269,6 +271,7 @@ export function WhiteboardCanvas() {
         onAddImage={() => setImgUrlOpen(true)}
         onAddVideo={() => setVidUrlOpen(true)}
         onAddElement={() => setUrlOpen(true)}
+        onToggleDebug={() => setDebugOpen((v) => !v)}
       />
 
       {/* Right sidebar: layers list */}
@@ -276,6 +279,9 @@ export function WhiteboardCanvas() {
 
       {/* Bottom properties panel */}
       <PropertiesPanel />
+
+      {/* Debug panel */}
+      <DebugPanel open={debugOpen} onClose={() => setDebugOpen(false)} />
 
       {/* Image URL modal */}
       <UrlModal
