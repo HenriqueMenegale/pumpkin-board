@@ -265,6 +265,26 @@
   color: #111827;
 }
 
+/* Icon buttons in toolbar: show label on hover/focus */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px; /* a bit tighter */
+}
+.btn-icon .icon {
+  width: 18px;
+  height: 18px;
+}
+.btn-icon .icon-text {
+  display: none;
+  font-weight: 600;
+}
+.btn-icon:hover .icon-text,
+.btn-icon:focus-visible .icon-text {
+  display: inline;
+}
+
 /* ===== Debug panel ===== */
 .wb-debug-panel {
   position: absolute;
