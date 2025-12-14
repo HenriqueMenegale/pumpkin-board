@@ -2,10 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Application, Container, Graphics } from 'pixi.js';
 import { canvasStore, useCanvasStore } from '../store/canvasStore';
 import { UrlModal } from './UrlModal';
+import { ImagesLayer } from './ImagesLayer';
 
 export function WhiteboardCanvas() {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const [urlOpen, setUrlOpen] = useState(false);
+  const [imgUrlOpen, setImgUrlOpen] = useState(false);
+  const [imagesContainer, setImagesContainer] = useState<Container | null>(null);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -16,6 +19,8 @@ export function WhiteboardCanvas() {
     let initPromise: Promise<void> | null = null;
     let canvasEl: HTMLCanvasElement | null = null;
     let scene: Container | null = null;
+    let rectsContainer: Container | null = null;
+    let imgsContainer: Container | null = null;
     let unsubscribe: (() => void) | null = null;
 
     initPromise = (async () => {
@@ -32,35 +37,41 @@ export function WhiteboardCanvas() {
           appended = true;
         }
 
-        //main container for items
+        // main containers for items
         scene = new Container();
+        rectsContainer = new Container();
+        imgsContainer = new Container();
+        scene.addChild(rectsContainer);
+        scene.addChild(imgsContainer);
         app.stage.addChild(scene);
+        setImagesContainer(imgsContainer);
 
         const render = (objects: ReturnType<typeof canvasStore.getState>['objects']) => {
-          if (!scene) return;
-          while (scene.children.length) {
-            const child = scene.removeChildAt(0);
+          if (!rectsContainer) return;
+          // Clear only rectangles layer
+          while (rectsContainer.children.length) {
+            const child = rectsContainer.removeChildAt(0);
             child.destroy?.({ children: true });
           }
 
           for (const obj of objects) {
             if (obj.type === 'rect') {
               const g = new Graphics();
-              const fill = obj.fill ?? 0x2ecc71;
-              const alpha = obj.alpha ?? 1;
+              const fill = (obj as any).fill ?? 0x2ecc71;
+              const alpha = (obj as any).alpha ?? 1;
               g.rect(obj.x, obj.y, obj.width, obj.height).fill(fill, alpha);
-              if (obj.stroke) {
-                const sc = obj.stroke.color ?? 0x000000;
-                const sw = obj.stroke.width ?? 1;
-                const sa = obj.stroke.alpha ?? 1;
+              const stroke = (obj as any).stroke;
+              if (stroke) {
+                const sc = stroke.color ?? 0x000000;
+                const sw = stroke.width ?? 1;
+                const sa = stroke.alpha ?? 1;
                 g.stroke({ color: sc, width: sw, alpha: sa });
               }
-              if (obj.rotation) {
-                g.rotation = obj.rotation;
+              if ((obj as any).rotation) {
+                g.rotation = (obj as any).rotation;
               }
-              scene.addChild(g);
+              rectsContainer.addChild(g);
             }
-
           }
         };
 
@@ -98,6 +109,15 @@ export function WhiteboardCanvas() {
           }
 
           if (scene) {
+            // Destroy sub-containers first
+            if (rectsContainer) {
+              rectsContainer.destroy({ children: true });
+              rectsContainer = null;
+            }
+            if (imgsContainer) {
+              imgsContainer.destroy({ children: true });
+              imgsContainer = null;
+            }
             scene.destroy({ children: true });
             scene = null;
           }
@@ -123,6 +143,8 @@ export function WhiteboardCanvas() {
 
   return (
     <div ref={mountRef} className="wb-root">
+      {/* Images layer mounts once Pixi container is ready */}
+      <ImagesLayer container={imagesContainer} />
       {/* Overlay controls */}
       <div className="wb-controls">
         <button
@@ -141,12 +163,39 @@ export function WhiteboardCanvas() {
           Add green rectangle
         </button>
         <button
+          onClick={() => setImgUrlOpen(true)}
+          className="btn btn-blue"
+        >
+          Add image via URL
+        </button>
+        <button
           onClick={() => setUrlOpen(true)}
           className="btn btn-blue"
         >
           Add Element
         </button>
       </div>
+
+      {/* Image URL modal */}
+      <UrlModal
+        open={imgUrlOpen}
+        title="Add image"
+        placeholder="https://example.com/image.png"
+        submitLabel="Add image"
+        onClose={() => setImgUrlOpen(false)}
+        onSubmit={(url) => {
+          // Add an image object using the store-driven rendering via ImagesLayer
+          canvasStore.getState().addObject({
+            type: 'image',
+            src: url,
+            x: 100,
+            y: 100,
+            width: 300,
+            height: 200,
+          } as any);
+          setImgUrlOpen(false);
+        }}
+      />
 
       <UrlModal
         open={urlOpen}
