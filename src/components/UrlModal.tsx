@@ -88,6 +88,11 @@ export function UrlModal({
             {submitLabel}
           </button>
         </div>
+      <strong>Files in this server for testing</strong> <br />
+      <small>Prevents possible cors issues</small><br />
+      http://localhost:5173/video/v-01.mp4<br />
+      http://localhost:5173/video/v-02.mp4<br />
+      http://localhost:5173/video/v-03.mp4<br />
       </div>
     </div>
   );
