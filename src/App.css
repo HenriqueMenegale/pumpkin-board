@@ -58,6 +58,36 @@
   gap: 8px;
 }
 
+/* Per-video controls rendered by VideosLayer */
+.wb-video-controls {
+  position: absolute;
+  top: 56px; /* below main controls */
+  left: 12px;
+  z-index: 10;
+}
+.wb-video-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.wb-video-float {
+  position: absolute;
+  z-index: 11; /* above canvas, below modal */
+}
+.wb-video-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.wb-video-label {
+  font-size: 12px;
+  color: #374151;
+}
+
 .btn {
   padding: 8px 12px;
   border-radius: 6px;

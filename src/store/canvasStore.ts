@@ -29,6 +29,9 @@ export type VideoObject = BaseObject & {
   muted?: boolean;
   loop?: boolean;
   autoplay?: boolean;
+  playing?: boolean;
+  volume?: number;
+  currentTime?: number;
 };
 
 export type CanvasObject = RectObject | ImageObject | VideoObject;
@@ -43,6 +46,10 @@ type CanvasState = {
   bringToFront: (id: string) => void;
   sendToBack: (id: string) => void;
   clear: () => void;
+  playVideo: (id: string) => void;
+  pauseVideo: (id: string) => void;
+  playAllVideos: () => void;
+  pauseAllVideos: () => void;
 };
 
 export const useCanvasStore = create<CanvasState>((set, get) => ({
@@ -92,6 +99,34 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   },
 
   clear: () => set({ objects: [] }),
+
+  playVideo: (id) => {
+    set((state) => ({
+      objects: state.objects.map((o) =>
+        o.id === id && o.type === 'video' ? ({ ...o, playing: true } as CanvasObject) : o
+      ),
+    }));
+  },
+
+  pauseVideo: (id) => {
+    set((state) => ({
+      objects: state.objects.map((o) =>
+        o.id === id && o.type === 'video' ? ({ ...o, playing: false } as CanvasObject) : o
+      ),
+    }));
+  },
+
+  playAllVideos: () => {
+    set((state) => ({
+      objects: state.objects.map((o) => (o.type === 'video' ? ({ ...o, playing: true } as CanvasObject) : o)),
+    }));
+  },
+
+  pauseAllVideos: () => {
+    set((state) => ({
+      objects: state.objects.map((o) => (o.type === 'video' ? ({ ...o, playing: false } as CanvasObject) : o)),
+    }));
+  },
 }));
 
 export const canvasStore = {

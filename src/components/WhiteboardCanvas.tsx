@@ -3,12 +3,15 @@ import { Application, Container, Graphics } from 'pixi.js';
 import { canvasStore, useCanvasStore } from '../store/canvasStore';
 import { UrlModal } from './UrlModal';
 import { ImagesLayer } from './ImagesLayer';
+import { VideosLayer } from './VideosLayer';
 
 export function WhiteboardCanvas() {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const [urlOpen, setUrlOpen] = useState(false);
   const [imgUrlOpen, setImgUrlOpen] = useState(false);
+  const [vidUrlOpen, setVidUrlOpen] = useState(false);
   const [imagesContainer, setImagesContainer] = useState<Container | null>(null);
+  const [videosContainer, setVideosContainer] = useState<Container | null>(null);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -21,6 +24,7 @@ export function WhiteboardCanvas() {
     let scene: Container | null = null;
     let rectsContainer: Container | null = null;
     let imgsContainer: Container | null = null;
+    let vidsContainer: Container | null = null;
     let unsubscribe: (() => void) | null = null;
 
     initPromise = (async () => {
@@ -41,10 +45,13 @@ export function WhiteboardCanvas() {
         scene = new Container();
         rectsContainer = new Container();
         imgsContainer = new Container();
+        vidsContainer = new Container();
         scene.addChild(rectsContainer);
         scene.addChild(imgsContainer);
+        scene.addChild(vidsContainer);
         app.stage.addChild(scene);
         setImagesContainer(imgsContainer);
+        setVideosContainer(vidsContainer);
 
         const render = (objects: ReturnType<typeof canvasStore.getState>['objects']) => {
           if (!rectsContainer) return;
@@ -118,6 +125,10 @@ export function WhiteboardCanvas() {
               imgsContainer.destroy({ children: true });
               imgsContainer = null;
             }
+            if (vidsContainer) {
+              vidsContainer.destroy({ children: true });
+              vidsContainer = null;
+            }
             scene.destroy({ children: true });
             scene = null;
           }
@@ -145,6 +156,8 @@ export function WhiteboardCanvas() {
     <div ref={mountRef} className="wb-root">
       {/* Images layer mounts once Pixi container is ready */}
       <ImagesLayer container={imagesContainer} />
+      {/* Videos layer mounts once Pixi container is ready */}
+      <VideosLayer container={videosContainer} />
       {/* Overlay controls */}
       <div className="wb-controls">
         <button
@@ -163,10 +176,28 @@ export function WhiteboardCanvas() {
           Add green rectangle
         </button>
         <button
+          onClick={() => canvasStore.getState().playAllVideos()}
+          className="btn"
+        >
+          Play all videos
+        </button>
+        <button
+          onClick={() => canvasStore.getState().pauseAllVideos()}
+          className="btn"
+        >
+          Pause all videos
+        </button>
+        <button
           onClick={() => setImgUrlOpen(true)}
           className="btn btn-blue"
         >
           Add image via URL
+        </button>
+        <button
+          onClick={() => setVidUrlOpen(true)}
+          className="btn btn-blue"
+        >
+          Add video via URL
         </button>
         <button
           onClick={() => setUrlOpen(true)}
@@ -194,6 +225,30 @@ export function WhiteboardCanvas() {
             height: 200,
           } as any);
           setImgUrlOpen(false);
+        }}
+      />
+
+      {/* Video URL modal */}
+      <UrlModal
+        open={vidUrlOpen}
+        title="Add video"
+        placeholder="https://example.com/video.mp4"
+        submitLabel="Add video"
+        onClose={() => setVidUrlOpen(false)}
+        onSubmit={(url) => {
+          canvasStore.getState().addObject({
+            type: 'video',
+            src: url,
+            x: 150,
+            y: 150,
+            width: 320,
+            height: 180,
+            muted: true,
+            loop: true,
+            autoplay: false,
+            playing: false,
+          } as any);
+          setVidUrlOpen(false);
         }}
       />
 
