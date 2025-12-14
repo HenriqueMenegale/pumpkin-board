@@ -76,9 +76,12 @@ export function ImagesLayer({ container }: Props) {
             (s as any).eventMode = 'static';
             (s as any).cursor = 'pointer';
             s.on('pointerdown', (e: any) => {
+              const st = useCanvasStore.getState();
+              if (st.panningMode) return; // disable item drag when panning
               const pos = e.global;
-              useCanvasStore.getState().selectObject(obj.id);
-              dragRef.current = { id: obj.id, dx: pos.x - s.x, dy: pos.y - s.y };
+              const local = { x: pos.x - st.viewport.x, y: pos.y - st.viewport.y };
+              st.selectObject(obj.id);
+              dragRef.current = { id: obj.id, dx: local.x - s.x, dy: local.y - s.y };
               (s as any).cursor = 'grabbing';
             });
             s.on('pointerup', () => {
@@ -153,7 +156,8 @@ export function ImagesLayer({ container }: Props) {
       const drag = dragRef.current;
       if (!drag) return;
       const { id, dx, dy } = drag;
-      const pos = { x: e.clientX, y: e.clientY };
+      const { viewport } = useCanvasStore.getState();
+      const pos = { x: e.clientX - viewport.x, y: e.clientY - viewport.y };
       useCanvasStore.getState().updateObject(id, (prev: any) => ({ x: pos.x - dx, y: pos.y - dy }));
     };
     const onUp = () => {

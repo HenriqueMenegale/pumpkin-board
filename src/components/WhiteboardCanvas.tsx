@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Application, Container, Graphics } from 'pixi.js';
 import { canvasStore, useCanvasStore } from '../store/canvasStore';
 import { UrlModal } from './UrlModal';
+import { Toolbar } from './Toolbar';
 import { ImagesLayer } from './ImagesLayer';
 import { VideosLayer } from './VideosLayer';
 
@@ -13,6 +14,12 @@ export function WhiteboardCanvas() {
   const [imagesContainer, setImagesContainer] = useState<Container | null>(null);
   const [videosContainer, setVideosContainer] = useState<Container | null>(null);
   const dragRef = useRef<null | { id: string; dx: number; dy: number }>(null);
+  const viewport = useCanvasStore((s) => s.viewport);
+  const setViewport = useCanvasStore((s) => s.setViewport);
+  const panningMode = useCanvasStore((s) => s.panningMode);
+  const setPanningMode = useCanvasStore((s) => s.setPanningMode);
+  const [panningActive, setPanningActive] = useState(false);
+  const panStartRef = useRef<{ x: number; y: number; vx: number; vy: number } | null>(null);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -51,6 +58,8 @@ export function WhiteboardCanvas() {
         scene.addChild(imgsContainer);
         scene.addChild(vidsContainer);
         app.stage.addChild(scene);
+        // apply initial viewport offset
+        scene.position.set(viewport.x, viewport.y);
         setImagesContainer(imgsContainer);
         setVideosContainer(vidsContainer);
 
@@ -89,9 +98,12 @@ export function WhiteboardCanvas() {
               g.eventMode = 'static' as any;
               g.cursor = 'pointer';
               g.on('pointerdown', (e: any) => {
+                if (useCanvasStore.getState().panningMode) return; // don't start object drag while panning
                 const pos = e.global;
+                // convert to scene-local by removing viewport offset
+                const local = { x: pos.x - useCanvasStore.getState().viewport.x, y: pos.y - useCanvasStore.getState().viewport.y };
                 useCanvasStore.getState().selectObject(obj.id);
-                dragRef.current = { id: obj.id, dx: pos.x - obj.x, dy: pos.y - obj.y };
+                dragRef.current = { id: obj.id, dx: local.x - obj.x, dy: local.y - obj.y };
                 (g as any).cursor = 'grabbing';
               });
               g.on('pointerup', () => {
@@ -111,6 +123,9 @@ export function WhiteboardCanvas() {
         unsubscribe = useCanvasStore.subscribe((state, prev) => {
           if (state.objects !== prev.objects || state.selectedId !== prev.selectedId) {
             render(state.objects, state.selectedId);
+          }
+          if ((state.viewport.x !== prev.viewport?.x) || (state.viewport.y !== prev.viewport?.y)) {
+            if (scene) scene.position.set(state.viewport.x, state.viewport.y);
           }
         });
 
@@ -141,7 +156,6 @@ export function WhiteboardCanvas() {
           }
 
           if (scene) {
-            // Destroy sub-containers first
             if (rectsContainer) {
               rectsContainer.destroy({ children: true });
               rectsContainer = null;
@@ -177,19 +191,28 @@ export function WhiteboardCanvas() {
     };
   }, []);
 
-  // Global drag listeners for rectangles (and fallback)
+  // drag listeners
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
+      // handle panning when active
+      if (panningActive && panStartRef.current) {
+        const { x, y, vx, vy } = panStartRef.current;
+        const dx = e.clientX - x;
+        const dy = e.clientY - y;
+        setViewport({ x: vx + dx, y: vy + dy });
+        return;
+      }
       const drag = dragRef.current;
       if (!drag) return;
       const { id, dx, dy } = drag;
-      const pos = { x: e.clientX, y: e.clientY };
+      // convert to world coords considering viewport offset
+      const pos = { x: e.clientX - viewport.x, y: e.clientY - viewport.y };
       useCanvasStore.getState().updateObject(id, (prev: any) => ({ x: pos.x - dx, y: pos.y - dy }));
     };
     const onUp = () => {
-      if (dragRef.current) {
-        dragRef.current = null;
-      }
+      if (dragRef.current) dragRef.current = null;
+      if (panningActive) setPanningActive(false);
+      panStartRef.current = null;
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
@@ -199,62 +222,72 @@ export function WhiteboardCanvas() {
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp as any);
     };
-  }, []);
+  }, [viewport.x, viewport.y, panningActive, setViewport]);
+
+  // activate pan with spacebar
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        if (!panningMode) setPanningMode(true);
+        e.preventDefault();
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        if (panningMode) setPanningMode(false);
+        // end active pan if any
+        if (panningActive) setPanningActive(false);
+        panStartRef.current = null;
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown, { passive: false } as any);
+    window.addEventListener('keyup', onKeyUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown as any);
+      window.removeEventListener('keyup', onKeyUp as any);
+    };
+  }, [panningMode, panningActive]);
 
   return (
-    <div ref={mountRef} className="wb-root">
+    <div
+      ref={mountRef}
+      className={`wb-root${panningMode ? ' wb-panning' : ''}${panningActive ? ' wb-panning-active' : ''}`}
+      onPointerDown={(e) => {
+        // Start panning if space is held and the pointer is not over a control element
+        if (panningMode) {
+          const t = e.target as HTMLElement;
+          // Ignore clicks on UI overlays/controls
+          if (t && (t.closest('.wb-controls') || t.closest('.wb-video-float') || t.closest('.modal') || t.closest('.modal-backdrop'))) {
+            return;
+          }
+          setPanningActive(true);
+          panStartRef.current = { x: e.clientX, y: e.clientY, vx: viewport.x, vy: viewport.y };
+        }
+      }}
+    >
       {/* Images layer mounts once Pixi container is ready */}
       <ImagesLayer container={imagesContainer} />
       {/* Videos layer mounts once Pixi container is ready */}
       <VideosLayer container={videosContainer} />
-      {/* Overlay controls */}
-      <div className="wb-controls">
-        <button
-          onClick={() => {
-            canvasStore.getState().addObject({
-              type: 'rect',
-              x: Math.random() * 250,
-              y: Math.random() * 250,
-              width: 240,
-              height: 140,
-              fill: 0x2ecc71,
-            } as any);
-          }}
-          className="btn btn-green"
-        >
-          Add green rectangle
-        </button>
-        <button
-          onClick={() => canvasStore.getState().playAllVideos()}
-          className="btn"
-        >
-          Play all videos
-        </button>
-        <button
-          onClick={() => canvasStore.getState().pauseAllVideos()}
-          className="btn"
-        >
-          Pause all videos
-        </button>
-        <button
-          onClick={() => setImgUrlOpen(true)}
-          className="btn btn-blue"
-        >
-          Add image via URL
-        </button>
-        <button
-          onClick={() => setVidUrlOpen(true)}
-          className="btn btn-blue"
-        >
-          Add video via URL
-        </button>
-        <button
-          onClick={() => setUrlOpen(true)}
-          className="btn btn-blue"
-        >
-          Add Element
-        </button>
-      </div>
+      {/* Toolbar controls */}
+      <Toolbar
+        onAddRect={() => {
+          canvasStore.getState().addObject({
+            type: 'rect',
+            x: Math.random() * 250,
+            y: Math.random() * 250,
+            width: 240,
+            height: 140,
+            fill: 0x2ecc71,
+          } as any);
+        }}
+        onPlayAll={() => canvasStore.getState().playAllVideos()}
+        onPauseAll={() => canvasStore.getState().pauseAllVideos()}
+        onAddImage={() => setImgUrlOpen(true)}
+        onAddVideo={() => setVidUrlOpen(true)}
+        onAddElement={() => setUrlOpen(true)}
+      />
 
       {/* Image URL modal */}
       <UrlModal

@@ -49,6 +49,14 @@
   background: #111111;
 }
 
+/* Cursor states for space-drag panning */
+.wb-panning {
+  cursor: grab;
+}
+.wb-panning-active {
+  cursor: grabbing;
+}
+
 .wb-controls {
   position: absolute;
   top: 12px;

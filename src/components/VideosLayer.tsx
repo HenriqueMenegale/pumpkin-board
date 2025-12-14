@@ -13,6 +13,7 @@ export function VideosLayer({ container }: Props) {
   const videos = useMemo(() => objects.filter((o: any) => o.type === 'video') as any[], [objects]);
   const playVideo = useCanvasStore((s) => s.playVideo);
   const pauseVideo = useCanvasStore((s) => s.pauseVideo);
+  const viewport = useCanvasStore((s) => s.viewport);
   const dragRef = useRef<null | { id: string; dx: number; dy: number }>(null);
 
   useEffect(() => {
@@ -89,10 +90,13 @@ export function VideosLayer({ container }: Props) {
       (sprite as any).eventMode = 'static';
       (sprite as any).cursor = 'pointer';
       sprite.on('pointerdown', (e: any) => {
+        const st = useCanvasStore.getState();
+        if (st.panningMode) return; // disable item drag while panning
         const pos = e.global;
-        useCanvasStore.getState().selectObject(id);
+        const local = { x: pos.x - st.viewport.x, y: pos.y - st.viewport.y };
+        st.selectObject(id);
         // use the sprite's live position to compute drag offset
-        dragRef.current = { id, dx: pos.x - sprite.x, dy: pos.y - sprite.y };
+        dragRef.current = { id, dx: local.x - sprite.x, dy: local.y - sprite.y };
         (sprite as any).cursor = 'grabbing';
       });
       sprite.on('pointerup', () => {
@@ -220,7 +224,8 @@ export function VideosLayer({ container }: Props) {
       const drag = dragRef.current;
       if (!drag) return;
       const { id, dx, dy } = drag;
-      const pos = { x: e.clientX, y: e.clientY };
+      const { viewport } = useCanvasStore.getState();
+      const pos = { x: e.clientX - viewport.x, y: e.clientY - viewport.y };
       useCanvasStore.getState().updateObject(id, (prev: any) => ({ x: pos.x - dx, y: pos.y - dy }));
     };
     const onUp = () => {
@@ -242,7 +247,7 @@ export function VideosLayer({ container }: Props) {
         <div
           key={v.id}
           className="wb-video-float"
-          style={{ left: v.x, top: v.y + v.height + 6 }}
+          style={{ left: v.x + viewport.x, top: v.y + v.height + 6 + viewport.y }}
         >
           <div className="wb-video-item">
             <span className="wb-video-label">Video</span>

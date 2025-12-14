@@ -41,6 +41,8 @@ type Updater<T> = Partial<T> | ((prev: T) => Partial<T>);
 type CanvasState = {
   objects: CanvasObject[];
   selectedId: string | null;
+  viewport: { x: number; y: number };
+  panningMode: boolean;
   addObject: (obj: Omit<CanvasObject, 'id'> & { id?: string }) => string;
   updateObject: (id: string, patch: Updater<CanvasObject>) => void;
   removeObject: (id: string) => void;
@@ -53,11 +55,16 @@ type CanvasState = {
   pauseAllVideos: () => void;
   selectObject: (id: string | null) => void;
   clearSelection: () => void;
+  setViewport: (pos: { x: number; y: number }) => void;
+  panBy: (dx: number, dy: number) => void;
+  setPanningMode: (on: boolean) => void;
 };
 
 export const useCanvasStore = create<CanvasState>((set, get) => ({
   objects: [],
   selectedId: null,
+  viewport: { x: 0, y: 0 },
+  panningMode: false,
 
   addObject: (obj) => {
     const id = obj.id ?? uuidv4();
@@ -134,6 +141,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
   selectObject: (id) => set({ selectedId: id }),
   clearSelection: () => set({ selectedId: null }),
+
+  setViewport: (pos) => set({ viewport: { x: pos.x, y: pos.y } }),
+  panBy: (dx, dy) => set((state) => ({ viewport: { x: state.viewport.x + dx, y: state.viewport.y + dy } })),
+  setPanningMode: (on) => set({ panningMode: on }),
 }));
 
 export const canvasStore = {
