@@ -40,3 +40,114 @@
 .read-the-docs {
   color: #888;
 }
+
+/* ===== Whiteboard styles ===== */
+.wb-root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #111111;
+}
+
+.wb-controls {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  color: #111827;
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.btn-green {
+  border-color: #2ecc71;
+  background: #eafff2;
+  color: #0b6623;
+}
+.btn-blue {
+  border-color: #3b82f6;
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* ===== Modal styles ===== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.modal {
+  width: min(520px, 92vw);
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.icon-button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.modal-row {
+  display: flex;
+  gap: 8px;
+}
+
+.url-input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 14px;
+}
+
+.text-muted {
+  color: #475569;
+}
+
+.small {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.code-inline {
+  background: #f1f5f9;
+  padding: 1px 4px;
+  border-radius: 4px;
+}

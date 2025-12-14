@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Application, Container, Graphics } from 'pixi.js';
 import { canvasStore, useCanvasStore } from '../store/canvasStore';
+import { UrlModal } from './UrlModal';
 
 export function WhiteboardCanvas() {
   const mountRef = useRef<HTMLDivElement | null>(null);
+  const [urlOpen, setUrlOpen] = useState(false);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -69,7 +71,6 @@ export function WhiteboardCanvas() {
           }
         });
 
-        // Seed a demo rectangle via the store (StrictMode-safe)
         const st = canvasStore.getState();
         if (st.objects.length === 0) {
           st.addObject({
@@ -121,45 +122,40 @@ export function WhiteboardCanvas() {
   }, []);
 
   return (
-    <div
-      ref={mountRef}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        overflow: 'hidden',
-        background: '#111111',
-      }}
-    >
-      {/* Testiiiiing */}
-      <button
-        onClick={() => {
-          canvasStore.getState().addObject({
-            type: 'rect',
-            x: Math.random() * 250,
-            y: Math.random() * 250,
-            width: 240,
-            height: 140,
-            fill: 0x2ecc71,
-          } as any);
+    <div ref={mountRef} className="wb-root">
+      {/* Overlay controls */}
+      <div className="wb-controls">
+        <button
+          onClick={() => {
+            canvasStore.getState().addObject({
+              type: 'rect',
+              x: Math.random() * 250,
+              y: Math.random() * 250,
+              width: 240,
+              height: 140,
+              fill: 0x2ecc71,
+            } as any);
+          }}
+          className="btn btn-green"
+        >
+          Add green rectangle
+        </button>
+        <button
+          onClick={() => setUrlOpen(true)}
+          className="btn btn-blue"
+        >
+          Add Element
+        </button>
+      </div>
+
+      <UrlModal
+        open={urlOpen}
+        onClose={() => setUrlOpen(false)}
+        onSubmit={(url) => {
+          console.log('worked:', url);
+          setUrlOpen(false);
         }}
-        style={{
-          position: 'absolute',
-          top: 12,
-          left: 12,
-          zIndex: 10,
-          padding: '8px 12px',
-          borderRadius: 6,
-          border: '1px solid #2ecc71',
-          background: '#eafff2',
-          color: '#0b6623',
-          fontWeight: 600,
-          cursor: 'pointer',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-        }}
-      >
-        Add green rectangle
-      </button>
-        {/* end testing Testiiiiing ui */}
+      />
     </div>
   );
 }
