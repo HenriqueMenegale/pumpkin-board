@@ -66,6 +66,80 @@
   gap: 8px;
 }
 
+/* ===== Right sidebar (Layers) ===== */
+.wb-sidebar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 280px;
+  background: #ffffff;
+  border-left: 1px solid #e5e7eb;
+  box-shadow: -6px 0 16px rgba(0, 0, 0, 0.1);
+  z-index: 12; /* above canvas and video overlays */
+  display: flex;
+  flex-direction: column;
+}
+
+.wb-sidebar-header {
+  padding: 12px 14px;
+  font-weight: 700;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.wb-layer-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+  flex: 1;
+}
+
+.wb-layer-item {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #ffffff;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.wb-layer-item:hover {
+  background: #f8fafc;
+}
+.wb-layer-item.active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.wb-layer-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.wb-layer-rect { background: #10b981; }
+.wb-layer-image { background: #7c3aed; }
+.wb-layer-video { background: #f59e0b; }
+
+.wb-layer-text {
+  font-size: 12px;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wb-layer-empty {
+  padding: 8px 10px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
 /* Per-video controls rendered by VideosLayer */
 .wb-video-controls {
   position: absolute;
