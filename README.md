@@ -2,6 +2,9 @@
 
 A small test project for Aby showcasing a canvas/WebGL whiteboard built with PixiJS and React. It demonstrates adding images and videos by URL, selecting and moving elements, basic property editing, and canvas panning.
 
+### Deployed URL:
+https://aby-board-odcr5.ondigitalocean.app/
+
 #### Tech stack
 - Build: Vite (vite@^7) + TypeScript (TS 5.9)
 - UI: React 19
