@@ -185,7 +185,12 @@ export function VideosLayer({ container }: Props) {
             entry.outline = outline;
           }
           outline.clear();
-          outline.rect((obj as any).x - 2, (obj as any).y - 2, (obj as any).width + 4, (obj as any).height + 4).stroke({ color: 0x3b82f6, width: 2 });
+          // Mirror the sprite transform so the outline rotates with the video
+          outline.position.set((obj as any).x, (obj as any).y);
+          outline.rotation = (obj as any).rotation ?? 0;
+          outline
+            .rect(-2, -2, (obj as any).width + 4, (obj as any).height + 4)
+            .stroke({ color: 0x3b82f6, width: 2 });
         } else if (entry.outline) {
           if (entry.outline.parent === container) container.removeChild(entry.outline);
           entry.outline.destroy();

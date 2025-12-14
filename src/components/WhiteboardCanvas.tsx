@@ -6,6 +6,7 @@ import { Toolbar } from './Toolbar';
 import { ImagesLayer } from './ImagesLayer';
 import { VideosLayer } from './VideosLayer';
 import { LayersSidebar } from './LayersSidebar';
+import { PropertiesPanel } from './PropertiesPanel';
 
 export function WhiteboardCanvas() {
   const mountRef = useRef<HTMLDivElement | null>(null);
@@ -249,7 +250,7 @@ export function WhiteboardCanvas() {
         if (panningMode) {
           const t = e.target as HTMLElement;
           // Ignore clicks on UI overlays/controls
-          if (t && (t.closest('.wb-controls') || t.closest('.wb-video-float') || t.closest('.modal') || t.closest('.modal-backdrop') || t.closest('.wb-sidebar'))) {
+          if (t && (t.closest('.wb-controls') || t.closest('.wb-video-float') || t.closest('.modal') || t.closest('.modal-backdrop') || t.closest('.wb-sidebar') || t.closest('.wb-props'))) {
             return;
           }
           setPanningActive(true);
@@ -272,6 +273,9 @@ export function WhiteboardCanvas() {
 
       {/* Right sidebar: layers list */}
       <LayersSidebar />
+
+      {/* Bottom properties panel */}
+      <PropertiesPanel />
 
       {/* Image URL modal */}
       <UrlModal

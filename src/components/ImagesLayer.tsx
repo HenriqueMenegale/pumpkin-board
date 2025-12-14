@@ -118,7 +118,12 @@ export function ImagesLayer({ container }: Props) {
             entry.outline = outline;
           }
           outline.clear();
-          outline.rect(obj.x - 2, obj.y - 2, obj.width + 4, obj.height + 4).stroke({ color: 0x3b82f6, width: 2 });
+          // Position/rotate the outline graphic like the sprite, then draw at local 0,0
+          outline.position.set(obj.x, obj.y);
+          outline.rotation = obj.rotation ?? 0;
+          outline
+            .rect(-2, -2, obj.width + 4, obj.height + 4)
+            .stroke({ color: 0x3b82f6, width: 2 });
         } else if (entry.outline) {
           if (entry.outline.parent === container) container.removeChild(entry.outline);
           entry.outline.destroy();
