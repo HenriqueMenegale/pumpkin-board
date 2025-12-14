@@ -60,7 +60,7 @@ type CanvasState = {
   setPanningMode: (on: boolean) => void;
 };
 
-export const useCanvasStore = create<CanvasState>((set, get) => ({
+export const useCanvasStore = create<CanvasState>((set) => ({
   objects: [],
   selectedId: null,
   viewport: { x: 0, y: 0 },
@@ -84,7 +84,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   },
 
   removeObject: (id) => {
-    set((state) => ({ objects: state.objects.filter((o) => o.id !== id) }));
+    set((state) => ({
+      objects: state.objects.filter((o) => o.id !== id),
+      selectedId: state.selectedId === id ? null : state.selectedId,
+    }));
   },
 
   bringToFront: (id) => {

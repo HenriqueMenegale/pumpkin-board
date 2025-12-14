@@ -98,8 +98,8 @@ export function VideosLayer({ container }: Props) {
           if (entry.outline && entry.outline.parent === container) container.removeChild(entry.outline);
           entry.outline?.destroy();
           if (entry.sprite.parent === container) container.removeChild(entry.sprite);
-          try { entry.video.pause(); } catch {}
-          entry.sprite.destroy({ children: true, texture: true, baseTexture: true });
+          if (entry.video) { try { entry.video.pause(); } catch {} }
+          entry.sprite.destroy({ children: true, texture: true });
         }
       }
 
@@ -239,7 +239,7 @@ export function VideosLayer({ container }: Props) {
         entry.outline?.destroy();
         if (entry.sprite.parent === container) container.removeChild(entry.sprite);
         if (entry.video) { try { entry.video.pause(); } catch {} }
-        entry.sprite.destroy({ children: true, texture: true, baseTexture: true });
+        entry.sprite.destroy({ children: true, texture: true });
       }
       entries.clear();
       pendingRef.current.clear();
@@ -254,7 +254,7 @@ export function VideosLayer({ container }: Props) {
       const { id, dx, dy } = drag;
       const { viewport } = useCanvasStore.getState();
       const pos = { x: e.clientX - viewport.x, y: e.clientY - viewport.y };
-      useCanvasStore.getState().updateObject(id, (prev: any) => ({ x: pos.x - dx, y: pos.y - dy }));
+      useCanvasStore.getState().updateObject(id, { x: pos.x - dx, y: pos.y - dy } as any);
     };
     const onUp = () => {
       if (dragRef.current) dragRef.current = null;

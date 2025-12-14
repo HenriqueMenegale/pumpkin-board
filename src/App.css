@@ -134,6 +134,11 @@
   text-overflow: ellipsis;
 }
 
+/* flex spacer within a layer row to push trailing controls */
+.wb-layer-grow {
+  flex: 1 1 auto;
+}
+
 .wb-layer-empty {
   padding: 8px 10px;
   color: #6b7280;
@@ -351,6 +356,7 @@
   cursor: pointer;
   font-size: 18px;
   line-height: 1;
+  color: #000000; /* ensure the × icon is visible on light backgrounds */
 }
 
 .modal-row {

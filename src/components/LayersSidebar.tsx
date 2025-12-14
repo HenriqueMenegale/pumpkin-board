@@ -5,6 +5,7 @@ export function LayersSidebar() {
   const objects = useCanvasStore((s) => s.objects);
   const selectedId = useCanvasStore((s) => s.selectedId);
   const selectObject = useCanvasStore((s) => s.selectObject);
+  const removeObject = useCanvasStore((s) => s.removeObject);
 
   const items = useMemo(() => [...objects].reverse(), [objects]);
 
@@ -21,14 +22,28 @@ export function LayersSidebar() {
           const active = selectedId === o.id;
           return (
             <li key={o.id}>
-              <button
+              <div
                 className={`wb-layer-item${active ? ' active' : ''}`}
                 onClick={() => selectObject(o.id)}
                 title={`${o.type} (${o.width}×${o.height}) at ${o.x},${o.y}`}
+                role="button"
+                tabIndex={0}
               >
                 <span className={`wb-layer-dot wb-layer-${o.type}`}></span>
                 <span className="wb-layer-text">{label}</span>
-              </button>
+                <span className="wb-layer-grow" />
+                <button
+                  className="icon-button"
+                  aria-label="Delete layer"
+                  title="Delete layer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeObject(o.id);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
             </li>
           );
         })}

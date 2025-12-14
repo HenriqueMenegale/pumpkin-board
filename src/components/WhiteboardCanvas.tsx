@@ -201,7 +201,7 @@ export function WhiteboardCanvas() {
       const { id, dx, dy } = drag;
       // convert to world coords considering viewport offset
       const pos = { x: e.clientX - viewport.x, y: e.clientY - viewport.y };
-      useCanvasStore.getState().updateObject(id, (prev: any) => ({ x: pos.x - dx, y: pos.y - dy }));
+      useCanvasStore.getState().updateObject(id, { x: pos.x - dx, y: pos.y - dy } as any);
     };
     const onUp = () => {
       if (dragRef.current) dragRef.current = null;
@@ -224,6 +224,22 @@ export function WhiteboardCanvas() {
       if (e.code === 'Space') {
         if (!panningMode) setPanningMode(true);
         e.preventDefault();
+      }
+      // handle delete
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const target = e.target as HTMLElement | null;
+        const isEditing = !!target && (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          (target as any).isContentEditable
+        );
+        if (isEditing) return; // don't delete while typing in inputs
+
+        const { selectedId, removeObject } = useCanvasStore.getState() as any;
+        if (selectedId) {
+          removeObject(selectedId);
+          e.preventDefault(); // prevent browser navigation on Backspace
+        }
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
@@ -248,10 +264,9 @@ export function WhiteboardCanvas() {
       ref={mountRef}
       className={`wb-root${panningMode ? ' wb-panning' : ''}${panningActive ? ' wb-panning-active' : ''}`}
       onPointerDown={(e) => {
-        // Start panning if space is held and the pointer is not over a control element
         if (panningMode) {
           const t = e.target as HTMLElement;
-          // Ignore clicks on UI overlays/controls
+          // ignore clicks on UI overlays/controls
           if (t && (t.closest('.wb-controls') || t.closest('.wb-video-float') || t.closest('.modal') || t.closest('.modal-backdrop') || t.closest('.wb-sidebar') || t.closest('.wb-props') || t.closest('.wb-debug-panel'))) {
             return;
           }
@@ -260,11 +275,10 @@ export function WhiteboardCanvas() {
         }
       }}
     >
-      {/* Images layer mounts once Pixi container is ready */}
+
       <ImagesLayer container={imagesContainer} />
-      {/* Videos layer mounts once Pixi container is ready */}
       <VideosLayer container={videosContainer} />
-      {/* Toolbar controls */}
+
       <Toolbar
         onPlayAll={() => canvasStore.getState().playAllVideos()}
         onPauseAll={() => canvasStore.getState().pauseAllVideos()}
@@ -274,16 +288,12 @@ export function WhiteboardCanvas() {
         onToggleDebug={() => setDebugOpen((v) => !v)}
       />
 
-      {/* Right sidebar: layers list */}
       <LayersSidebar />
 
-      {/* Bottom properties panel */}
       <PropertiesPanel />
 
-      {/* Debug panel */}
       <DebugPanel open={debugOpen} onClose={() => setDebugOpen(false)} />
 
-      {/* Image URL modal */}
       <UrlModal
         open={imgUrlOpen}
         title="Add image"
@@ -291,7 +301,6 @@ export function WhiteboardCanvas() {
         submitLabel="Add image"
         onClose={() => setImgUrlOpen(false)}
         onSubmit={(url) => {
-          // Add an image object using the store-driven rendering via ImagesLayer
           canvasStore.getState().addObject({
             type: 'image',
             src: url,

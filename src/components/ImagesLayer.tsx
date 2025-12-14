@@ -200,7 +200,7 @@ export function ImagesLayer({ container }: Props) {
       const { id, dx, dy } = drag;
       const { viewport } = useCanvasStore.getState();
       const pos = { x: e.clientX - viewport.x, y: e.clientY - viewport.y };
-      useCanvasStore.getState().updateObject(id, (prev: any) => ({ x: pos.x - dx, y: pos.y - dy }));
+      useCanvasStore.getState().updateObject(id, { x: pos.x - dx, y: pos.y - dy } as any);
     };
     const onUp = () => {
       if (dragRef.current) dragRef.current = null;
