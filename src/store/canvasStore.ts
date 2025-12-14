@@ -40,6 +40,7 @@ type Updater<T> = Partial<T> | ((prev: T) => Partial<T>);
 
 type CanvasState = {
   objects: CanvasObject[];
+  selectedId: string | null;
   addObject: (obj: Omit<CanvasObject, 'id'> & { id?: string }) => string;
   updateObject: (id: string, patch: Updater<CanvasObject>) => void;
   removeObject: (id: string) => void;
@@ -50,10 +51,13 @@ type CanvasState = {
   pauseVideo: (id: string) => void;
   playAllVideos: () => void;
   pauseAllVideos: () => void;
+  selectObject: (id: string | null) => void;
+  clearSelection: () => void;
 };
 
 export const useCanvasStore = create<CanvasState>((set, get) => ({
   objects: [],
+  selectedId: null,
 
   addObject: (obj) => {
     const id = obj.id ?? uuidv4();
@@ -127,6 +131,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       objects: state.objects.map((o) => (o.type === 'video' ? ({ ...o, playing: false } as CanvasObject) : o)),
     }));
   },
+
+  selectObject: (id) => set({ selectedId: id }),
+  clearSelection: () => set({ selectedId: null }),
 }));
 
 export const canvasStore = {

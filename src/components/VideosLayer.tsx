@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Container, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { useCanvasStore } from '../store/canvasStore';
 
 interface Props {
@@ -7,12 +7,13 @@ interface Props {
 }
 
 export function VideosLayer({ container }: Props) {
-  const spritesRef = useRef<Map<string, { sprite: Sprite; video: HTMLVideoElement }>>(new Map());
+  const spritesRef = useRef<Map<string, { sprite: Sprite; video: HTMLVideoElement; outline?: Graphics }>>(new Map());
   const unsubscribeRef = useRef<null | (() => void)>(null);
   const objects = useCanvasStore((s) => s.objects);
   const videos = useMemo(() => objects.filter((o: any) => o.type === 'video') as any[], [objects]);
   const playVideo = useCanvasStore((s) => s.playVideo);
   const pauseVideo = useCanvasStore((s) => s.pauseVideo);
+  const dragRef = useRef<null | { id: string; dx: number; dy: number }>(null);
 
   useEffect(() => {
     if (!container) return;
@@ -84,6 +85,25 @@ export function VideosLayer({ container }: Props) {
       sprite.width = opts.width;
       sprite.height = opts.height;
 
+      // interactivity for selection/dragging
+      (sprite as any).eventMode = 'static';
+      (sprite as any).cursor = 'pointer';
+      sprite.on('pointerdown', (e: any) => {
+        const pos = e.global;
+        useCanvasStore.getState().selectObject(id);
+        // use the sprite's live position to compute drag offset
+        dragRef.current = { id, dx: pos.x - sprite.x, dy: pos.y - sprite.y };
+        (sprite as any).cursor = 'grabbing';
+      });
+      sprite.on('pointerup', () => {
+        dragRef.current = null;
+        (sprite as any).cursor = 'pointer';
+      });
+      sprite.on('pointerupoutside', () => {
+        dragRef.current = null;
+        (sprite as any).cursor = 'pointer';
+      });
+
       container.addChild(sprite);
       entries.set(id, { sprite, video });
 
@@ -98,18 +118,20 @@ export function VideosLayer({ container }: Props) {
     };
 
     const apply = async () => {
-      const videos = useCanvasStore
-        .getState()
-        .objects.filter((o) => o.type === 'video') as ReturnType<typeof useCanvasStore.getState>['objects'];
+      const state = useCanvasStore.getState();
+      const videos = state.objects.filter((o) => o.type === 'video') as ReturnType<typeof useCanvasStore.getState>['objects'];
+      const selectedId = state.selectedId;
       const nextIds = new Set(videos.map((o) => (o as any).id));
 
       // cleanup routine
-      for (const [id, { sprite, video }] of entries) {
+      for (const [id, entry] of entries) {
         if (!nextIds.has(id)) {
           entries.delete(id);
-          if (sprite.parent === container) container.removeChild(sprite);
-          try { video.pause(); } catch {}
-          sprite.destroy({ children: true, texture: true, baseTexture: true });
+          if (entry.outline && entry.outline.parent === container) container.removeChild(entry.outline);
+          entry.outline?.destroy();
+          if (entry.sprite.parent === container) container.removeChild(entry.sprite);
+          try { entry.video.pause(); } catch {}
+          entry.sprite.destroy({ children: true, texture: true, baseTexture: true });
         }
       }
 
@@ -129,7 +151,7 @@ export function VideosLayer({ container }: Props) {
           sprite.rotation = obj.rotation ?? 0;
           sprite.width = obj.width;
           sprite.height = obj.height;
-          // runtime playback options updates
+
           if (typeof obj.loop === 'boolean') video.loop = obj.loop;
           if (typeof obj.muted === 'boolean') video.muted = obj.muted;
           if (typeof obj.volume === 'number') {
@@ -147,13 +169,31 @@ export function VideosLayer({ container }: Props) {
             }
           }
         }
+
+        // selection outline per video
+        const entry = entries.get((obj as any).id)!;
+        const show = selectedId === (obj as any).id;
+        if (show) {
+          let outline = entry.outline;
+          if (!outline) {
+            outline = new Graphics();
+            container.addChild(outline);
+            entry.outline = outline;
+          }
+          outline.clear();
+          outline.rect((obj as any).x - 2, (obj as any).y - 2, (obj as any).width + 4, (obj as any).height + 4).stroke({ color: 0x3b82f6, width: 2 });
+        } else if (entry.outline) {
+          if (entry.outline.parent === container) container.removeChild(entry.outline);
+          entry.outline.destroy();
+          delete entry.outline;
+        }
       }
     };
 
     apply();
 
     const unsub = useCanvasStore.subscribe((state, prev) => {
-      if (state.objects !== prev.objects) apply();
+      if (state.objects !== prev.objects || state.selectedId !== prev.selectedId) apply();
     });
     unsubscribeRef.current = unsub;
 
@@ -163,14 +203,38 @@ export function VideosLayer({ container }: Props) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
-      for (const [, { sprite, video }] of entries) {
-        if (sprite.parent === container) container.removeChild(sprite);
-        try { video.pause(); } catch {}
-        sprite.destroy({ children: true, texture: true, baseTexture: true });
+      for (const [, entry] of entries) {
+        if (entry.outline && entry.outline.parent === container) container.removeChild(entry.outline);
+        entry.outline?.destroy();
+        if (entry.sprite.parent === container) container.removeChild(entry.sprite);
+        try { entry.video.pause(); } catch {}
+        entry.sprite.destroy({ children: true, texture: true, baseTexture: true });
       }
       entries.clear();
     };
   }, [container]);
+
+  // handle drag
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      const { id, dx, dy } = drag;
+      const pos = { x: e.clientX, y: e.clientY };
+      useCanvasStore.getState().updateObject(id, (prev: any) => ({ x: pos.x - dx, y: pos.y - dy }));
+    };
+    const onUp = () => {
+      if (dragRef.current) dragRef.current = null;
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp as any);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp as any);
+    };
+  }, []);
 
   return (
     <>
