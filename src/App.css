@@ -377,6 +377,7 @@
   margin: 0;
   font-size: 16px;
   font-weight: 700;
+  color: #000000; /* ensure modal title text is black on light background */
 }
 
 .icon-button {
@@ -399,6 +400,7 @@
   border-radius: 8px;
   border: 1px solid #cbd5e1;
   font-size: 14px;
+  background: #ffffff;
 }
 
 .text-muted {

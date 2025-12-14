@@ -4,10 +4,12 @@ import { useCanvasStore } from '../store/canvasStore';
 import {
   createPlaceholderSprite,
   setupSpriteInteractivity,
-  updateSelectionOutline,
   updateSpriteTransform,
+  ensureSelectionFrameWithHandles,
 } from './helpers/layerHelpers';
+import { oppositeCornerAnchorWorld, centerFromTopLeft } from './helpers/transformMath';
 import { useGlobalDrag } from '../hooks/useGlobalDrag';
+import { useGlobalTransform, type TransformState } from '../hooks/useGlobalTransform';
 
 interface Props {
   container: Container | null;
@@ -22,6 +24,7 @@ export function VideosLayer({ container }: Props) {
   const pauseVideo = useCanvasStore((s) => s.pauseVideo);
   const viewport = useCanvasStore((s) => s.viewport);
   const dragRef = useRef<null | { id: string; dx: number; dy: number }>(null);
+  const transformRef = useRef<TransformState>(null);
   // prevent duplicate sprite creations while waiting for canplay
   const pendingRef = useRef<Map<string, Promise<void>>>(new Map());
 
@@ -174,10 +177,58 @@ export function VideosLayer({ container }: Props) {
           }
         }
 
-        // selection outline per video
+        // selection outline + transform handles per video
         const entry = entries.get((obj as any).id);
         if (entry) {
-          entry.outline = updateSelectionOutline(container, entry.outline, obj as any, selectedId);
+          entry.outline = ensureSelectionFrameWithHandles(
+            container,
+            entry.outline,
+            obj as any,
+            selectedId,
+            ({ id, startX, startY, handle }) => {
+              // start scale transform
+              dragRef.current = null;
+              const cur = useCanvasStore.getState().objects.find((o) => o.id === id) as any;
+              if (!cur) return;
+              const rot = cur.rotation ?? 0;
+              const anchor = oppositeCornerAnchorWorld(cur.x, cur.y, cur.width, cur.height, rot, handle);
+              transformRef.current = {
+                mode: 'scale',
+                id,
+                startX,
+                startY,
+                objX: cur.x,
+                objY: cur.y,
+                width: cur.width,
+                height: cur.height,
+                rotation: rot,
+                handle,
+                anchorWX: anchor.x,
+                anchorWY: anchor.y,
+              } as any;
+            },
+            ({ id, startX, startY }) => {
+              // start rotate transform
+              dragRef.current = null;
+              const cur = useCanvasStore.getState().objects.find((o) => o.id === id) as any;
+              if (!cur) return;
+              const rot = cur.rotation ?? 0;
+              const { cx, cy } = centerFromTopLeft(cur.x, cur.y, cur.width, cur.height, rot);
+              transformRef.current = {
+                mode: 'rotate',
+                id,
+                startX,
+                startY,
+                objX: cur.x,
+                objY: cur.y,
+                width: cur.width,
+                height: cur.height,
+                rotation: rot,
+                cx,
+                cy,
+              } as any;
+            }
+          );
         }
       }
     };
@@ -209,6 +260,8 @@ export function VideosLayer({ container }: Props) {
 
   // shared drag wiring
   useGlobalDrag(dragRef);
+  // shared scale/rotate wiring
+  useGlobalTransform(transformRef);
 
   return (
     <>

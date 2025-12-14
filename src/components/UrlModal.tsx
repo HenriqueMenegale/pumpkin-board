@@ -79,7 +79,12 @@ export function UrlModal({
             placeholder={placeholder}
             className="url-input"
           />
-          <button onClick={handleSubmit} className="btn btn-green">
+          <button
+            onClick={handleSubmit}
+            className="btn"
+            aria-label={submitLabel}
+            title={submitLabel}
+          >
             {submitLabel}
           </button>
         </div>

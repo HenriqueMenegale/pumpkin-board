@@ -286,9 +286,9 @@ export function WhiteboardCanvas() {
 
       <UrlModal
         open={imgUrlOpen}
-        title="Add image"
+        title="Add Image"
         placeholder="https://example.com/image.png"
-        submitLabel="Add image"
+        submitLabel="Add Image"
         onClose={() => setImgUrlOpen(false)}
         onSubmit={(url) => {
           canvasStore.getState().addObject({
@@ -306,9 +306,9 @@ export function WhiteboardCanvas() {
       {/* Video URL modal */}
       <UrlModal
         open={vidUrlOpen}
-        title="Add video"
+        title="Add Video"
         placeholder="https://example.com/video.mp4"
-        submitLabel="Add video"
+        submitLabel="Add Video"
         onClose={() => setVidUrlOpen(false)}
         onSubmit={(url) => {
           canvasStore.getState().addObject({
