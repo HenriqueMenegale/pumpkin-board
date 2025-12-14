@@ -6,10 +6,10 @@ export const DEBUG_IMAGE_URLS: string[] = [
 ];
 
 export const DEBUG_VIDEO_URLS: string[] = [
-  'http://localhost:5173/video/v-01.mp4',
-  'http://localhost:5173/video/v-02.mp4',
-  'http://localhost:5173/video/v-03.mp4',
-  'http://localhost:5173/video/v-04.mp4',
-  'http://localhost:5173/video/v-05.mp4',
-  'http://localhost:5173/video/v-06.mp4',
+  'https://aby-board-odcr5.ondigitalocean.app/video/v-01.mp4',
+  'https://aby-board-odcr5.ondigitalocean.app/video/v-02.mp4',
+  'https://aby-board-odcr5.ondigitalocean.app/video/v-03.mp4',
+  'https://aby-board-odcr5.ondigitalocean.app/video/v-04.mp4',
+  'https://aby-board-odcr5.ondigitalocean.app/video/v-05.mp4',
+  'https://aby-board-odcr5.ondigitalocean.app/video/v-06.mp4',
 ];
