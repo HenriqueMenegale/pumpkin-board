@@ -6,6 +6,7 @@ export function LayersSidebar() {
   const selectedId = useCanvasStore((s) => s.selectedId);
   const selectObject = useCanvasStore((s) => s.selectObject);
   const removeObject = useCanvasStore((s) => s.removeObject);
+  const moveObject = useCanvasStore((s) => s.moveObject);
 
   const items = useMemo(() => [...objects].reverse(), [objects]);
 
@@ -13,7 +14,7 @@ export function LayersSidebar() {
     <aside className="wb-sidebar" aria-label="Layers">
       <div className="wb-sidebar-header">Layers</div>
       <ul className="wb-layer-list">
-        {items.map((o) => {
+        {items.map((o, idx) => {
           const label = o.type === 'image'
             ? `Image` + (('src' in o && o.src) ? ` · ${shorten(o.src)}` : '')
             : o.type === 'video'
@@ -28,6 +29,33 @@ export function LayersSidebar() {
                 title={`${o.type} (${o.width}×${o.height}) at ${o.x},${o.y}`}
                 role="button"
                 tabIndex={0}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/plain', o.id);
+                  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+                  (e.currentTarget as HTMLElement).classList.add('wb-layer-dragging');
+                }}
+                onDragEnd={(e) => {
+                  (e.currentTarget as HTMLElement).classList.remove('wb-layer-dragging');
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).classList.add('wb-layer-drag-over');
+                }}
+                onDragLeave={(e) => {
+                  (e.currentTarget as HTMLElement).classList.remove('wb-layer-drag-over');
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).classList.remove('wb-layer-drag-over');
+                  const draggedId = e.dataTransfer.getData('text/plain');
+                  if (!draggedId) return;
+                  if (draggedId === o.id) return;
+                  // Sidebar shows reversed order (topmost first). Translate to store index.
+                  const dropIndexInSidebar = idx;
+                  const toIndexInStore = objects.length - 1 - dropIndexInSidebar;
+                  moveObject(draggedId, toIndexInStore);
+                }}
               >
                 <span className={`wb-layer-dot wb-layer-${o.type}`}></span>
                 <span className="wb-layer-text">{label}</span>

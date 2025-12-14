@@ -34,9 +34,6 @@ export function WhiteboardCanvas() {
     let initPromise: Promise<void> | null = null;
     let canvasEl: HTMLCanvasElement | null = null;
     let scene: Container | null = null;
-    let rectsContainer: Container | null = null;
-    let imgsContainer: Container | null = null;
-    let vidsContainer: Container | null = null;
     let unsubscribe: (() => void) | null = null;
 
     initPromise = (async () => {
@@ -53,28 +50,29 @@ export function WhiteboardCanvas() {
           appended = true;
         }
 
-        // main containers for items
+        // single parent container for all display objects so global z-order works across types
         scene = new Container();
-        rectsContainer = new Container();
-        imgsContainer = new Container();
-        vidsContainer = new Container();
-        scene.addChild(rectsContainer);
-        scene.addChild(imgsContainer);
-        scene.addChild(vidsContainer);
+        (scene as any).sortableChildren = true;
         app.stage.addChild(scene);
+        
         // apply initial viewport offset
         scene.position.set(viewport.x, viewport.y);
-        setImagesContainer(imgsContainer);
-        setVideosContainer(vidsContainer);
+        // use the same scene container for images and videos layers
+        setImagesContainer(scene);
+        setVideosContainer(scene);
 
         const render = (
           objects: ReturnType<typeof canvasStore.getState>['objects'],
           selectedId: string | null = null
         ) => {
-          if (!rectsContainer) return;
-          // Clear only rectangles layer
-          while (rectsContainer.children.length) {
-            const child = rectsContainer.removeChildAt(0);
+          if (!scene) return;
+          // Clear only previous rectangle graphics from the shared scene
+          const toRemove: any[] = [];
+          for (const child of scene.children) {
+            if ((child as any).__isRect) toRemove.push(child);
+          }
+          for (const child of toRemove) {
+            if (child.parent === scene) scene.removeChild(child);
             child.destroy?.({ children: true });
           }
 
@@ -98,6 +96,10 @@ export function WhiteboardCanvas() {
               if ((obj as any).rotation) {
                 g.rotation = (obj as any).rotation;
               }
+              // mark and assign global z-index according to store order
+              (g as any).__isRect = true;
+              const globalIndex = canvasStore.getState().objects.findIndex((oo) => oo.id === obj.id);
+              (g as any).zIndex = Number.isFinite(globalIndex) ? globalIndex : 0;
               // interactivity for selection/drag
               g.eventMode = 'static' as any;
               g.cursor = 'pointer';
@@ -118,7 +120,7 @@ export function WhiteboardCanvas() {
                 dragRef.current = null;
                 (g as any).cursor = 'pointer';
               });
-              rectsContainer.addChild(g);
+              scene.addChild(g);
             }
           }
         };
@@ -150,18 +152,6 @@ export function WhiteboardCanvas() {
           }
 
           if (scene) {
-            if (rectsContainer) {
-              rectsContainer.destroy({ children: true });
-              rectsContainer = null;
-            }
-            if (imgsContainer) {
-              imgsContainer.destroy({ children: true });
-              imgsContainer = null;
-            }
-            if (vidsContainer) {
-              vidsContainer.destroy({ children: true });
-              vidsContainer = null;
-            }
             scene.destroy({ children: true });
             scene = null;
           }

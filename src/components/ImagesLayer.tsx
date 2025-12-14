@@ -83,6 +83,9 @@ export function ImagesLayer({ container }: Props) {
           } as any);
           // interactivity
           setupSpriteInteractivity(s, obj.id, (v) => (dragRef.current = v));
+          // z-order within this container follows the global objects array index
+          const globalIndex = state.objects.findIndex((oo) => oo.id === obj.id);
+          (s as any).zIndex = Number.isFinite(globalIndex) ? globalIndex : 0;
           container.addChild(s);
           sprites.set(obj.id, { sprite: s });
 
@@ -99,7 +102,7 @@ export function ImagesLayer({ container }: Props) {
                 const ent = sprites.get(obj.id);
                 if (!ent) return;
                 ent.sprite.texture = tex;
-                // clear placeholder tint
+                // clear placeholder
                 (ent.sprite as any).tint = 0xFFFFFF;
               } catch (e) {
                 console.error('Failed to load image texture', (obj as any).src, e);
@@ -111,6 +114,8 @@ export function ImagesLayer({ container }: Props) {
           }
         } else {
           updateSpriteTransform(entry.sprite, obj as any);
+          const globalIndex = state.objects.findIndex((oo) => oo.id === (obj as any).id);
+          (entry.sprite as any).zIndex = Number.isFinite(globalIndex) ? globalIndex : 0;
           entry.sprite.alpha = 1;
           entry.sprite.visible = true;
         }

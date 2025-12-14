@@ -114,7 +114,7 @@ export function VideosLayer({ container }: Props) {
       for (const obj of videos as any[]) {
         const existing = entries.get(obj.id);
         if (!existing) {
-          // Create a visible placeholder sprite immediately
+          // add a placeholder sprite
           const latest = useCanvasStore.getState().objects.find((o) => o.id === obj.id) as any;
           const s = createPlaceholderSprite({
             id: obj.id,
@@ -128,10 +128,12 @@ export function VideosLayer({ container }: Props) {
           // Interactivity for selection/dragging
           setupSpriteInteractivity(s, obj.id, (v) => (dragRef.current = v));
 
+          // z-order within the shared scene follows global objects array index
+          const globalIndex = state.objects.findIndex((oo) => oo.id === obj.id);
+          (s as any).zIndex = Number.isFinite(globalIndex) ? globalIndex : 0;
           container.addChild(s);
           entries.set(obj.id, { sprite: s });
 
-          // Coalesce async load-and-swap per id
           if (!pendingRef.current.has(obj.id)) {
             const p = (async () => {
               try {
@@ -147,6 +149,8 @@ export function VideosLayer({ container }: Props) {
         } else {
           const { sprite, video } = existing;
           updateSpriteTransform(sprite, obj as any);
+          const globalIndex = state.objects.findIndex((oo) => oo.id === (obj as any).id);
+          (sprite as any).zIndex = Number.isFinite(globalIndex) ? globalIndex : 0;
           sprite.alpha = 1;
           sprite.visible = true;
 

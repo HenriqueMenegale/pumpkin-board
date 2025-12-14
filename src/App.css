@@ -116,6 +116,15 @@
   background: #eff6ff;
 }
 
+/* Drag & Drop states for layers */
+.wb-layer-item.wb-layer-dragging {
+  opacity: 0.6;
+}
+.wb-layer-item.wb-layer-drag-over {
+  border-color: #94a3b8; /* slate-400 */
+  background: #f1f5f9;   /* slate-100 */
+}
+
 .wb-layer-dot {
   width: 10px;
   height: 10px;

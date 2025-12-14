@@ -48,6 +48,7 @@ type CanvasState = {
   removeObject: (id: string) => void;
   bringToFront: (id: string) => void;
   sendToBack: (id: string) => void;
+  moveObject: (id: string, toIndex: number) => void;
   clear: () => void;
   playVideo: (id: string) => void;
   pauseVideo: (id: string) => void;
@@ -109,6 +110,22 @@ export const useCanvasStore = create<CanvasState>((set) => ({
       const [item] = arr.splice(idx, 1);
       arr.unshift(item);
       return { objects: arr };
+    });
+  },
+
+  moveObject: (id, toIndex) => {
+    set((state) => {
+      const from = state.objects.findIndex((o) => o.id === id);
+      if (from === -1 || from === toIndex) return {};
+
+      const to = Math.max(0, Math.min(state.objects.length - 1, toIndex));
+      if (from === to) return {};
+
+      const newObjects = [...state.objects];
+      const [item] = newObjects.splice(from, 1);
+      newObjects.splice(to, 0, item);
+
+      return { objects: newObjects };
     });
   },
 
