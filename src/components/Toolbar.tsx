@@ -1,4 +1,4 @@
-import { FiPlay, FiPause, FiImage, FiVideo, FiTool } from 'react-icons/fi';
+import { FiPlay, FiPause, FiImage, FiVideo, FiTool, FiInfo } from 'react-icons/fi';
 
 type ToolbarProps = {
   onPlayAll: () => void;
@@ -7,6 +7,7 @@ type ToolbarProps = {
   onAddVideo: () => void;
   onAddElement?: () => void;
   onToggleDebug?: () => void;
+  onToggleInfo?: () => void;
 };
 
 export function Toolbar({
@@ -15,6 +16,7 @@ export function Toolbar({
   onAddImage,
   onAddVideo,
   onToggleDebug,
+  onToggleInfo,
 }: ToolbarProps) {
   return (
     <div className="wb-controls">
@@ -63,6 +65,17 @@ export function Toolbar({
         >
           <FiTool className="icon" />
           <span className="icon-text">Debug</span>
+        </button>
+      )}
+      {onToggleInfo && (
+        <button
+          onClick={onToggleInfo}
+          className="btn btn-icon"
+          aria-label="Info & Shortcuts"
+          title="Info & Shortcuts"
+        >
+          <FiInfo className="icon" />
+          <span className="icon-text">Info</span>
         </button>
       )}
     </div>

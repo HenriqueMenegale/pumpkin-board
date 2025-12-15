@@ -29,3 +29,18 @@ export const DEFAULT_VIDEO_POSITION = { x: 150, y: 150 };
 // Initial max size for newly added images
 export const INITIAL_IMAGE_MAX_W = 800;
 export const INITIAL_IMAGE_MAX_H = 600;
+
+// Debug seeding ranges and sizes
+export const SPAWN_RANGE_MIN_FACTOR = -0.25; // -0.25× viewport
+export const SPAWN_RANGE_MAX_FACTOR = 1.25;  // +1.25× viewport
+export const DEBUG_IMG_MIN_W = 220;
+export const DEBUG_IMG_W_SPREAD = 260; // width = MIN + rand*SPREAD
+export const DEBUG_IMG_ASPECT = 2 / 3;
+export const DEBUG_VID_MIN_W = 320;
+export const DEBUG_VID_W_SPREAD = 200; // width = MIN + rand*SPREAD
+export const DEBUG_VID_ASPECT = 9 / 16;
+
+// Rectangle drawing defaults (for rect objects rendered in WhiteboardCanvas)
+export const RECT_DEFAULT_FILL = '#2ecc71';
+export const RECT_DEFAULT_STROKE = '#000000';
+export const RECT_DEFAULT_STROKE_WIDTH = 1;

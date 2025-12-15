@@ -306,6 +306,27 @@
   z-index: 13; /* above sidebar and props */
   min-width: 360px;
 }
+
+/* Info panel (placed to the left of the debug panel) */
+.wb-info-panel {
+  position: absolute;
+  top: 56px; /* below main controls */
+  left: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 13;
+  min-width: 320px;
+}
+.wb-info-content {
+  display: block;
+}
+.wb-info-list {
+  margin: 0;
+  padding-left: 18px;
+  text-align: left;
+}
 .wb-debug-header {
   display: flex;
   align-items: center;

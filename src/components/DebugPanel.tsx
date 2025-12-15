@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { canvasStore, useCanvasStore } from '../store/canvasStore';
 import { DEBUG_IMAGE_URLS, DEBUG_VIDEO_URLS } from '../debug/debugConfig';
+import {
+  SPAWN_RANGE_MIN_FACTOR,
+  SPAWN_RANGE_MAX_FACTOR,
+  DEBUG_IMG_MIN_W,
+  DEBUG_IMG_W_SPREAD,
+  DEBUG_IMG_ASPECT,
+  DEBUG_VID_MIN_W,
+  DEBUG_VID_W_SPREAD,
+  DEBUG_VID_ASPECT,
+} from '../config/constants';
 
 type DebugPanelProps = {
   open: boolean;
@@ -27,12 +37,9 @@ export function DebugPanel({ open, onClose }: DebugPanelProps) {
 
     let visible = 0;
     for (const o of objects) {
-      const left = o.x;
-      const top = o.y;
-      const right = o.x + o.width;
-      const bottom = o.y + o.height;
-      const intersects = right >= screenLeft && left <= screenRight && bottom >= screenTop && top <= screenBottom;
-      if (intersects) visible++;
+      if (aabbIntersects(o.x, o.y, o.width, o.height, screenLeft, screenTop, screenRight - screenLeft, screenBottom - screenTop)) {
+        visible++;
+      }
     }
     const total = objects.length;
     const culled = Math.max(0, total - visible);
@@ -46,11 +53,11 @@ export function DebugPanel({ open, onClose }: DebugPanelProps) {
     const h = size.h;
     for (let i = 0; i < count; i++) {
       const src = DEBUG_IMAGE_URLS[Math.floor(Math.random() * DEBUG_IMAGE_URLS.length)];
-      const iw = 220 + Math.floor(Math.random() * 260); // 220..480
-      const ih = Math.floor(iw * (2 / 3));
+      const iw = DEBUG_IMG_MIN_W + Math.floor(Math.random() * DEBUG_IMG_W_SPREAD);
+      const ih = Math.floor(iw * DEBUG_IMG_ASPECT);
       // Spread positions within ~1.5x the canvas size (centered around the viewport)
-      const x = Math.floor(randBetween(-0.25 * w, 1.25 * w));
-      const y = Math.floor(randBetween(-0.25 * h, 1.25 * h));
+      const x = Math.floor(randBetween(SPAWN_RANGE_MIN_FACTOR * w, SPAWN_RANGE_MAX_FACTOR * w));
+      const y = Math.floor(randBetween(SPAWN_RANGE_MIN_FACTOR * h, SPAWN_RANGE_MAX_FACTOR * h));
       canvasStore.getState().addObject({ type: 'image', src, x, y, width: iw, height: ih } as any);
     }
   };
@@ -60,11 +67,11 @@ export function DebugPanel({ open, onClose }: DebugPanelProps) {
     const h = size.h;
     for (let i = 0; i < count; i++) {
       const src = DEBUG_VIDEO_URLS[Math.floor(Math.random() * DEBUG_VIDEO_URLS.length)];
-      const vw = 320 + Math.floor(Math.random() * 200); // 320..520
-      const vh = Math.floor(vw * (9 / 16));
+      const vw = DEBUG_VID_MIN_W + Math.floor(Math.random() * DEBUG_VID_W_SPREAD);
+      const vh = Math.floor(vw * DEBUG_VID_ASPECT);
       // distribute across 1.5x the screen
-      const x = Math.floor(randBetween(-0.25 * w, 1.25 * w));
-      const y = Math.floor(randBetween(-0.25 * h, 1.25 * h));
+      const x = Math.floor(randBetween(SPAWN_RANGE_MIN_FACTOR * w, SPAWN_RANGE_MAX_FACTOR * w));
+      const y = Math.floor(randBetween(SPAWN_RANGE_MIN_FACTOR * h, SPAWN_RANGE_MAX_FACTOR * h));
       canvasStore.getState().addObject({
         type: 'video',
         src,
@@ -102,6 +109,15 @@ export function DebugPanel({ open, onClose }: DebugPanelProps) {
 
 function randBetween(min: number, max: number) {
   return Math.random() * (max - min) + min;
+}
+
+// Axis-aligned bounding-box intersection test
+function aabbIntersects(ax: number, ay: number, aw: number, ah: number, bx: number, by: number, bw: number, bh: number) {
+  const aRight = ax + aw;
+  const aBottom = ay + ah;
+  const bRight = bx + bw;
+  const bBottom = by + bh;
+  return aRight >= bx && ax <= bRight && aBottom >= by && ay <= bBottom;
 }
 
 export default DebugPanel;

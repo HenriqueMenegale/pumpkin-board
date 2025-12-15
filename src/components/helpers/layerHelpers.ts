@@ -9,6 +9,12 @@ import {
 import { hexToNumber } from './color';
 import { useCanvasStore } from '../../store/canvasStore';
 
+// Local UI geometry constants (single-file use)
+const HANDLE_SIZE = 12; // px square for corner scale handles
+const HANDLE_HALF = HANDLE_SIZE / 2; // convenience
+const ROTATE_HANDLE_OFFSET = 18; // px above top edge
+const ROTATE_HANDLE_RADIUS = 6; // px circle radius
+
 /**
  * Represents the current drag interaction state for moving an object.
  * When non-null, the element with `id` is being dragged and the
@@ -130,7 +136,10 @@ export function updateSelectionOutline(
     g.clear();
     g.position.set(obj.x, obj.y);
     g.rotation = obj.rotation ?? 0;
-    g.rect(-2, -2, obj.width + 4, obj.height + 4).stroke({ color: 0x3b82f6, width: 2 });
+    const p = SELECTION_OUTLINE_PADDING;
+    g
+      .rect(-p, -p, obj.width + p * 2, obj.height + p * 2)
+      .stroke({ color: hexToNumber(SELECTION_OUTLINE_COLOR), width: SELECTION_OUTLINE_WIDTH });
     return g;
   } else if (outline) {
     if (outline.parent === container) container.removeChild(outline);
@@ -220,7 +229,7 @@ export function ensureSelectionFrameWithHandles(
   ) => {
     const h = ensureHandle(idx);
     h.clear();
-    h.rect(localX, localY, 12, 12).fill(0x3b82f6);
+    h.rect(localX, localY, HANDLE_SIZE, HANDLE_SIZE).fill(hexToNumber(SELECTION_OUTLINE_COLOR));
     (h as any).eventMode = 'static';
     (h as any).cursor = cursor;
     if (!(h as any).__wired) {
@@ -238,16 +247,16 @@ export function ensureSelectionFrameWithHandles(
     }
   };
 
-  // Corner handles (12x12 squares)
-  wireScaleHandle(0, -6, -6, 'nw-resize', 'nw'); // top-left
-  wireScaleHandle(1, obj.width - 6, -6, 'ne-resize', 'ne'); // top-right
-  wireScaleHandle(2, -6, obj.height - 6, 'sw-resize', 'sw'); // bottom-left
-  wireScaleHandle(3, obj.width - 6, obj.height - 6, 'se-resize', 'se'); // bottom-right
+  // Corner handles
+  wireScaleHandle(0, -HANDLE_HALF, -HANDLE_HALF, 'nw-resize', 'nw'); // top-left
+  wireScaleHandle(1, obj.width - HANDLE_HALF, -HANDLE_HALF, 'ne-resize', 'ne'); // top-right
+  wireScaleHandle(2, -HANDLE_HALF, obj.height - HANDLE_HALF, 'sw-resize', 'sw'); // bottom-left
+  wireScaleHandle(3, obj.width - HANDLE_HALF, obj.height - HANDLE_HALF, 'se-resize', 'se'); // bottom-right
 
   // Rotate handle (circle) above top edge, centered
   const rotateHandle = ensureHandle(4);
   rotateHandle.clear();
-  rotateHandle.circle(obj.width / 2, -18, 6).fill(hexToNumber(SELECTION_OUTLINE_COLOR));
+  rotateHandle.circle(obj.width / 2, -ROTATE_HANDLE_OFFSET, ROTATE_HANDLE_RADIUS).fill(hexToNumber(SELECTION_OUTLINE_COLOR));
   (rotateHandle as any).eventMode = 'static';
   (rotateHandle as any).cursor = 'alias';
   if (!(rotateHandle as any).__wired) {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Application, Container, Graphics } from 'pixi.js';
+import { hexToNumber } from './helpers/color';
 import { canvasStore, useCanvasStore } from '../store/canvasStore';
 import { UrlModal } from './UrlModal';
 import { Toolbar } from './Toolbar';
@@ -7,6 +8,7 @@ import { ImagesLayer } from './ImagesLayer';
 import { VideosLayer } from './VideosLayer';
 import { LayersSidebar } from './LayersSidebar';
 import { DebugPanel } from './DebugPanel';
+import { InfoPanel } from './InfoPanel';
 import { PropertiesPanel } from './PropertiesPanel';
 import { loadImageMeta, fitWithinMax } from './helpers/mediaHelpers';
 import {
@@ -18,6 +20,9 @@ import {
   SELECTION_OUTLINE_PADDING,
   SELECTION_OUTLINE_COLOR,
   SELECTION_OUTLINE_WIDTH,
+  RECT_DEFAULT_FILL,
+  RECT_DEFAULT_STROKE,
+  RECT_DEFAULT_STROKE_WIDTH,
 } from '../config/constants';
 
 export function WhiteboardCanvas() {
@@ -26,6 +31,7 @@ export function WhiteboardCanvas() {
   const [imgUrlOpen, setImgUrlOpen] = useState(false);
   const [vidUrlOpen, setVidUrlOpen] = useState(false);
   const [debugOpen, setDebugOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [imagesContainer, setImagesContainer] = useState<Container | null>(null);
   const [videosContainer, setVideosContainer] = useState<Container | null>(null);
   const dragRef = useRef<null | { id: string; dx: number; dy: number }>(null);
@@ -90,13 +96,13 @@ export function WhiteboardCanvas() {
           for (const obj of objects) {
             if (obj.type === 'rect') {
               const g = new Graphics();
-              const fill = (obj as any).fill ?? 0x2ecc71;
+              const fill = (obj as any).fill ?? hexToNumber(RECT_DEFAULT_FILL);
               const alpha = (obj as any).alpha ?? 1;
               g.rect(obj.x, obj.y, obj.width, obj.height).fill(fill, alpha);
               const stroke = (obj as any).stroke;
               if (stroke) {
-                const sc = stroke.color ?? 0x000000;
-                const sw = stroke.width ?? 1;
+                const sc = stroke.color ?? hexToNumber(RECT_DEFAULT_STROKE);
+                const sw = stroke.width ?? RECT_DEFAULT_STROKE_WIDTH;
                 const sa = stroke.alpha ?? 1;
                 g.stroke({ color: sc, width: sw, alpha: sa });
               }
@@ -269,7 +275,7 @@ export function WhiteboardCanvas() {
         if (panningMode) {
           const t = e.target as HTMLElement;
           // ignore clicks on UI overlays/controls
-          if (t && (t.closest('.wb-controls') || t.closest('.wb-video-float') || t.closest('.modal') || t.closest('.modal-backdrop') || t.closest('.wb-sidebar') || t.closest('.wb-props') || t.closest('.wb-debug-panel'))) {
+          if (t && (t.closest('.wb-controls') || t.closest('.wb-video-float') || t.closest('.modal') || t.closest('.modal-backdrop') || t.closest('.wb-sidebar') || t.closest('.wb-props') || t.closest('.wb-debug-panel') || t.closest('.wb-info-panel'))) {
             return;
           }
           setPanningActive(true);
@@ -288,6 +294,7 @@ export function WhiteboardCanvas() {
         onAddVideo={() => setVidUrlOpen(true)}
         onAddElement={() => setUrlOpen(true)}
         onToggleDebug={() => setDebugOpen((v) => !v)}
+        onToggleInfo={() => setInfoOpen((v) => !v)}
       />
 
       <LayersSidebar />
@@ -295,6 +302,7 @@ export function WhiteboardCanvas() {
       <PropertiesPanel />
 
       <DebugPanel open={debugOpen} onClose={() => setDebugOpen(false)} />
+      <InfoPanel open={infoOpen} onClose={() => setInfoOpen(false)} />
 
       <UrlModal
         open={imgUrlOpen}
