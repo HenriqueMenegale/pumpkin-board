@@ -1,5 +1,3 @@
-import React from 'react';
-
 type InfoPanelProps = {
   open: boolean;
   onClose: () => void;
