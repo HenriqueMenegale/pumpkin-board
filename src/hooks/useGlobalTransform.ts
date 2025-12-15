@@ -5,6 +5,7 @@ import {
   angleDeltaAroundCenter,
   topLeftFromCenter,
 } from '../components/helpers/transformMath';
+import { TRANSFORM_MIN_SIZE } from '../config/constants';
 
 export type TransformState =
   | null
@@ -47,7 +48,7 @@ export function useGlobalTransform(ref: { current: TransformState }) {
           pointerWX: worldX,
           pointerWY: worldY,
           rotation: st.rotation ?? 0,
-          minSize: 10,
+          minSize: TRANSFORM_MIN_SIZE,
         });
         useCanvasStore.getState().updateObject(st.id, next as any);
       } else if (st.mode === 'rotate') {

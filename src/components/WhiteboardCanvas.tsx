@@ -8,6 +8,17 @@ import { VideosLayer } from './VideosLayer';
 import { LayersSidebar } from './LayersSidebar';
 import { DebugPanel } from './DebugPanel';
 import { PropertiesPanel } from './PropertiesPanel';
+import { loadImageMeta, fitWithinMax } from './helpers/mediaHelpers';
+import {
+  DEFAULT_IMAGE_POSITION,
+  INITIAL_IMAGE_MAX_W,
+  INITIAL_IMAGE_MAX_H,
+  DEFAULT_VIDEO,
+  APP_BACKGROUND_COLOR,
+  SELECTION_OUTLINE_PADDING,
+  SELECTION_OUTLINE_COLOR,
+  SELECTION_OUTLINE_WIDTH,
+} from '../config/constants';
 
 export function WhiteboardCanvas() {
   const mountRef = useRef<HTMLDivElement | null>(null);
@@ -40,7 +51,7 @@ export function WhiteboardCanvas() {
       try {
         await app.init({
           resizeTo: window,
-          background: '#ffffff',
+          background: APP_BACKGROUND_COLOR,
           antialias: true,
         });
         if (destroyed) return;
@@ -91,7 +102,8 @@ export function WhiteboardCanvas() {
               }
               // selection outline
               if (selectedId === obj.id) {
-                g.rect(obj.x - 2, obj.y - 2, obj.width + 4, obj.height + 4).stroke({ color: 0x3b82f6, width: 2, alpha: 1 });
+                const p = SELECTION_OUTLINE_PADDING;
+                g.rect(obj.x - p, obj.y - p, obj.width + p * 2, obj.height + p * 2).stroke({ color: SELECTION_OUTLINE_COLOR, width: SELECTION_OUTLINE_WIDTH, alpha: 1 });
               }
               if ((obj as any).rotation) {
                 g.rotation = (obj as any).rotation;
@@ -290,16 +302,33 @@ export function WhiteboardCanvas() {
         placeholder="https://example.com/image.png"
         submitLabel="Add Image"
         onClose={() => setImgUrlOpen(false)}
-        onSubmit={(url) => {
-          canvasStore.getState().addObject({
-            type: 'image',
-            src: url,
-            x: 100,
-            y: 100,
-            width: 300,
-            height: 200,
-          } as any);
-          setImgUrlOpen(false);
+        onSubmit={async (url) => {
+          try {
+            const meta = await loadImageMeta(url);
+            const fitted = fitWithinMax(meta.width, meta.height, INITIAL_IMAGE_MAX_W, INITIAL_IMAGE_MAX_H);
+            canvasStore.getState().addObject({
+              type: 'image',
+              src: url,
+              x: DEFAULT_IMAGE_POSITION.x,
+              y: DEFAULT_IMAGE_POSITION.y,
+              width: fitted.width,
+              height: fitted.height,
+              naturalWidth: meta.width,
+              naturalHeight: meta.height,
+            } as any);
+          } catch (e) {
+            // Fallback: add with a reasonable default size if metadata fails
+            canvasStore.getState().addObject({
+              type: 'image',
+              src: url,
+              x: DEFAULT_IMAGE_POSITION.x,
+              y: DEFAULT_IMAGE_POSITION.y,
+              width: Math.min(600, INITIAL_IMAGE_MAX_W),
+              height: Math.min(400, INITIAL_IMAGE_MAX_H),
+            } as any);
+          } finally {
+            setImgUrlOpen(false);
+          }
         }}
       />
 
@@ -314,10 +343,10 @@ export function WhiteboardCanvas() {
           canvasStore.getState().addObject({
             type: 'video',
             src: url,
-            x: 150,
-            y: 150,
-            width: 320,
-            height: 180,
+            x: DEFAULT_VIDEO.x,
+            y: DEFAULT_VIDEO.y,
+            width: DEFAULT_VIDEO.width,
+            height: DEFAULT_VIDEO.height,
             muted: true,
             loop: true,
             autoplay: false,

@@ -21,6 +21,8 @@ export type RectObject = BaseObject & {
 export type ImageObject = BaseObject & {
   type: 'image';
   src: string;
+  naturalWidth?: number;
+  naturalHeight?: number;
 };
 
 export type VideoObject = BaseObject & {

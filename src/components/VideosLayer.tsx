@@ -11,6 +11,7 @@ import { oppositeCornerAnchorWorld, centerFromTopLeft } from './helpers/transfor
 import { useGlobalDrag } from '../hooks/useGlobalDrag';
 import { useGlobalTransform, type TransformState } from '../hooks/useGlobalTransform';
 import { FiPlay, FiPause } from 'react-icons/fi';
+import { VIDEO_CONTROLS_OFFSET_Y, VIDEO_TIME_EPSILON } from '../config/constants';
 
 interface Props {
   container: Container | null;
@@ -165,7 +166,7 @@ export function VideosLayer({ container }: Props) {
             if (typeof obj.volume === 'number') {
               try { video.volume = Math.min(1, Math.max(0, obj.volume)); } catch {}
             }
-            if (typeof obj.currentTime === 'number' && Math.abs(video.currentTime - obj.currentTime) > 0.25) {
+            if (typeof obj.currentTime === 'number' && Math.abs(video.currentTime - obj.currentTime) > VIDEO_TIME_EPSILON) {
               try { video.currentTime = Math.max(0, obj.currentTime); } catch {}
             }
             if (typeof obj.playing === 'boolean') {
@@ -274,7 +275,7 @@ export function VideosLayer({ container }: Props) {
       className="wb-video-float"
       style={{
         left: selectedVideo.x + viewport.x,
-        top: selectedVideo.y + selectedVideo.height + 6 + viewport.y,
+        top: selectedVideo.y + selectedVideo.height + VIDEO_CONTROLS_OFFSET_Y + viewport.y,
         width: selectedVideo.width,
       }}
     >

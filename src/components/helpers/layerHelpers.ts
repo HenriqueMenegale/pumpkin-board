@@ -1,4 +1,12 @@
 import { Graphics, Sprite, Texture, Container } from 'pixi.js';
+import {
+  PLACEHOLDER_TINT,
+  SELECTION_OUTLINE_COLOR,
+  SELECTION_OUTLINE_PADDING,
+  SELECTION_OUTLINE_WIDTH,
+  SELECTION_OUTLINE_ZINDEX,
+} from '../../config/constants';
+import { hexToNumber } from './color';
 import { useCanvasStore } from '../../store/canvasStore';
 
 /**
@@ -46,7 +54,7 @@ export function createPlaceholderSprite(obj: BasicObject): Sprite {
   s.alpha = 1;
   s.visible = true;
   (s as any).renderable = true;
-  (s as any).tint = 0xdddddd;
+  (s as any).tint = hexToNumber(PLACEHOLDER_TINT);
   return s;
 }
 
@@ -177,7 +185,7 @@ export function ensureSelectionFrameWithHandles(
   let frame = outline;
   if (!frame) {
     frame = new Graphics();
-    (frame as any).zIndex = 9999;
+    (frame as any).zIndex = SELECTION_OUTLINE_ZINDEX;
     container.addChild(frame);
   }
 
@@ -185,7 +193,10 @@ export function ensureSelectionFrameWithHandles(
   frame.clear();
   frame.position.set(obj.x, obj.y);
   frame.rotation = obj.rotation ?? 0;
-  frame.rect(-2, -2, obj.width + 4, obj.height + 4).stroke({ color: 0x3b82f6, width: 2 });
+  const p = SELECTION_OUTLINE_PADDING;
+  frame
+    .rect(-p, -p, obj.width + p * 2, obj.height + p * 2)
+    .stroke({ color: hexToNumber(SELECTION_OUTLINE_COLOR), width: SELECTION_OUTLINE_WIDTH });
 
   // Create or update handles as children of the frame in local space
   // children indices:
@@ -236,7 +247,7 @@ export function ensureSelectionFrameWithHandles(
   // Rotate handle (circle) above top edge, centered
   const rotateHandle = ensureHandle(4);
   rotateHandle.clear();
-  rotateHandle.circle(obj.width / 2, -18, 6).fill(0x3b82f6);
+  rotateHandle.circle(obj.width / 2, -18, 6).fill(hexToNumber(SELECTION_OUTLINE_COLOR));
   (rotateHandle as any).eventMode = 'static';
   (rotateHandle as any).cursor = 'alias';
   if (!(rotateHandle as any).__wired) {
